@@ -2,8 +2,8 @@
 JIRA are not (officially) supporting the option of creating automatic backups for their cloud instance.
 This project was created to provide a fully automated infrastructure for backing up Atlassian Cloud JIRA instance on a periodic basis. 
 
-There are shell and bash scripts out there, which were created in order to download the backup file locally without the use of the "back manager" UI, 
-but this project is aiming for full automation, and therefore this is the features road map: 
+There are shell and bash scripts out there, which were created in order to download the backup file locally without the use of the "backup manager" UI, 
+but most of them are not maintained and throwing errors. So, this project is aiming for full backup automation, and therefore this is the features road map: 
 
 :white_check_mark: Create a script in python  
 :white_check_mark: Support creating config.json from user input ('wizard')   
