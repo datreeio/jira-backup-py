@@ -1,0 +1,12 @@
+{
+    "JIRA_HOST": "something.atlassian.net", 
+    "JIRA_USER": "user with permissions to https://%JIRA_HOST%.atlassian.net/secure/admin/CloudExport.jspa",
+    "JIRA_PASS": "%JIRA_USER% password",
+    "INCLUDE_ATTACHMENTS": "include jira attachments? this will make the backup size bigger - true / false",
+    "DOWNLOAD_LOCALLY": "download the backup file to backups folder? true / false", 
+    "UPLOAD_TO_S3": {
+        "S3_BUCKET": "S3 bucket name", 
+        "AWS_ACCESS_KEY": "not mandatory if already set on the machine with AWS CLI",
+        "AWS_SECRET_KEY": "not mandatory if already set on the machine with AWS CLI"
+    }
+}
