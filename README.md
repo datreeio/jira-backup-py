@@ -9,9 +9,9 @@ but most of them are not maintained and throwing errors. So, this project is aim
 :white_check_mark: Support creating config.json from user input ('wizard')   
 :white_check_mark: Download backup file locally  
 :white_check_mark: Add an option to stream backup file to S3  
-:white_check_mark: Check how to manually create a cron task on OS X / Linux 
-:white_check_mark: Check hot to manually create a schedule task on windows   
-:black_square_button: Support adding cron / scheduled task from script    
+:white_check_mark: Check how to manually create a cron task on OS X / Linux  
+:white_check_mark: Check hot to manually create a schedule task on windows  
+:black_square_button: Support adding cron / scheduled task from script    
 
 # Installation
 ### Prerequisite:  
@@ -34,7 +34,7 @@ $(venv) python backup.py
 It depends on your needs. I, for example, use this script together with [serverless](https://serverless.com/) to create a periodic [AWS lambda](https://aws.amazon.com/lambda/) which triggered every 4 days, creating a backup and upload it directly to S3.  
 
 There is a more "stupid" option to get the same result - by creating a cron / scheduled task on your local machine:  
-* OS X / Linux: set a cron task with crontab 
+* **OS X / Linux:** set a cron task with crontab 
 ``` 
 echo "* * * * * cd %script dir% && %activate virtualenv% && python backup.py > %log name% 2>&1" | crontab -
 ```  
@@ -43,7 +43,7 @@ Example for adding a cron task which will run every 4 days, at 10:00
 echo "0 10 */4 * * cd ~/Dev/jira-backup-py && source venv/bin/activate && python backup.py > backup_script.log 2>&1" | crontab -
 ```  
 
-* Windows: set a scheduled task with task scheduler  
+* **Windows:** set a scheduled task with task scheduler  
 ``` 
 schtasks /create /tn "%task name%" /sc DAILY /mo %number of days% /tr "%full path to win_task_wrapper.bat%" /st %start time%
 ```  
