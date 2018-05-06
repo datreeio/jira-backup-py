@@ -9,10 +9,9 @@ but most of them are not maintained and throwing errors. So, this project is aim
 :white_check_mark: Support creating config.json from user input ('wizard')   
 :white_check_mark: Download backup file locally  
 :white_check_mark: Add an option to stream backup file to S3  
-:white_check_mark: Check how to create a cron task on OS X  
-:black_square_button: Check how to create a cron task on windows  
-:black_square_button: Add some tests  
-:black_square_button: Support serveless function  
+:white_check_mark: Check how to manually create a cron task on OS X / Linux 
+:white_check_mark: Check hot to manually create a schedule task on windows   
+:black_square_button: Support adding cron / scheduled task from script    
 
 # Installation
 ### Prerequisite:  
@@ -33,17 +32,28 @@ $(venv) python backup.py
 
 ### What's next?
 It depends on your needs. I, for example, use this script together with [serverless](https://serverless.com/) to create a periodic [AWS lambda](https://aws.amazon.com/lambda/) which triggered every 4 days, creating a backup and upload it directly to S3.  
-There is a more "stupid" option to get the same result - by creating a cron task on your local machine:  
-* set crontab task on OS X: 
+
+There is a more "stupid" option to get the same result - by creating a cron / scheduled task on your local machine:  
+* OS X / Linux: set a cron task with crontab 
 ``` 
-echo "[* * * * *](https://crontab.guru/) cd %script_dir% && %activate_virtualenv% && python backup.py > backup_script.log 2>&1" | crontab -
+echo "* * * * * cd %script dir% && %activate virtualenv% && python backup.py > %log name% 2>&1" | crontab -
 ```  
+Example for adding a cron task which will run every 4 days, at 10:00  
 ```
 echo "0 10 */4 * * cd ~/Dev/jira-backup-py && source venv/bin/activate && python backup.py > backup_script.log 2>&1" | crontab -
+```  
+
+* Windows: set a scheduled task with task scheduler  
 ``` 
+schtasks /create /tn "%task name%" /sc DAILY /mo %number of days% /tr "%full path to win_task_wrapper.bat%" /st %start time%
+```  
+Example for adding a scheduled task which will run every 4 days, at 10:00  
+``` 
+schtasks /create /tn "jira-backup" /sc DAILY /mo 4 /tr "C:\jira-backup-py\win_task_wrapper.bat" /st 10:00
+```  
 
 # Resources:
 :heavy_plus_sign: [JIRA support - How to Automate Backups for JIRA Cloud applications](https://confluence.atlassian.com/jirakb/how-to-automate-backups-for-jira-cloud-applications-779160659.html)  
 :heavy_plus_sign: [Atlassian Labs' automatic-cloud-backup script](https://bitbucket.org/atlassianlabs/automatic-cloud-backup/src/d43ca5f33192e78b2e1869ab7c708bb32bfd7197/backup.ps1?at=master&fileviewer=file-view-default)  
-:heavy_plus_sign: [A more maintainable version of this script](https://github.com/mattock/automatic-cloud-backup)  
+:heavy_plus_sign: [A more maintainable version of Atlassian Labs' script](https://github.com/mattock/automatic-cloud-backup)  
 
