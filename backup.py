@@ -7,6 +7,7 @@ from requests.auth import HTTPBasicAuth
 import boto
 from boto.s3.key import Key
 import wizard
+from time import gmtime, strftime
 
 
 def read_config():
@@ -25,8 +26,9 @@ class Jira:
         self.wait = 30
 
     def create_backup(self):
+        print(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
         print('-> Starting backup; include attachments: {}'.format(self.config['INCLUDE_ATTACHMENTS']))
-        payload = {"cbAttachments": self.config['ATTACHMENTS'], "exportToCloud": "true"}
+        payload = {"cbAttachments": self.config['INCLUDE_ATTACHMENTS'], "exportToCloud": "true"}
         headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
         
         backup = requests.post(self.URL_run_backup, data=json.dumps(payload), headers=headers, auth=self.__auth)
