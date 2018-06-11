@@ -10,7 +10,7 @@ but most of them are not maintained and throwing errors. So, this project is aim
 :white_check_mark: Download backup file locally  
 :white_check_mark: Add an option to stream backup file to S3  
 :white_check_mark: Check how to manually create a cron task on OS X / Linux  
-:white_check_mark: Check hot to manually create a schedule task on windows  
+:white_check_mark: Check how to manually create a schedule task on windows  
 :black_square_button: Support adding cron / scheduled task from script    
 
 # Installation
@@ -24,7 +24,7 @@ but most of them are not maintained and throwing errors. So, this project is aim
 ```
 pip install -r requirements.txt
 ```  
-* Fill the details at the config.json file or run the backup.py script with '-w' flag  
+* Fill the details at the [config.json file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag  
 * Run backup.py script  
 ```
 $(venv) python backup.py 
