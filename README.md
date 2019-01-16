@@ -25,7 +25,7 @@ but most of them are not maintained and throwing errors. So, this project is aim
 pip install -r requirements.txt
 ```  
 3. Generate an API token at https://id.atlassian.com/manage/api-tokens  
-![Screenshot](https://github.com/datreeio/jira-backup-py/tree/master/screenshots/atlassian-api-token.png)  
+![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/atlassian-api-token.png)  
 4. Fill the details at the [config.json file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag  
 5. Run backup.py script  
 ```
