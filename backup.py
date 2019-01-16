@@ -19,7 +19,7 @@ def read_config():
 class Jira:
     def __init__(self, config):
         self.config = config
-        self.__auth = HTTPBasicAuth(self.config['JIRA_USER'], self.config['JIRA_PASS'])
+        self.__auth = HTTPBasicAuth(self.config['JIRA_EMAIL'], self.config['API_TOKEN'])
         self.URL_run_backup = 'https://{}/rest/backup/1/export/runbackup'.format(self.config['JIRA_HOST'])
         self.URL_download = 'https://{}/plugins/servlet'.format(self.config['JIRA_HOST'])
         self.backup_status = {}
