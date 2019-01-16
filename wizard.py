@@ -3,16 +3,16 @@ import json
 
 
 def create_config():
-    jira_host = raw_input("What is your jira host name? ")
-    user = raw_input("What is your jira user name? ")
-    password = raw_input("What is your jira password? ")
+    jira_host = raw_input("What is your Jira host name? ")
+    user = raw_input("What is your Jira account email address? ")
+    password = raw_input("Paste your Jira API token: ")
     attachments = raw_input("Do you want to include attachments? (true / false) ")
     download_locally = raw_input("Do you want to download the backup file locally? (true / false) ")
     custom_config = {
         'JIRA_HOST': jira_host,
         'INCLUDE_ATTACHMENTS': attachments.lower(),
-        'JIRA_USER': user,
-        'JIRA_PASS': password,
+        'JIRA_EMAIL': user,
+        'API_TOKEN': password,
         'DOWNLOAD_LOCALLY': download_locally.lower(),
         'UPLOAD_TO_S3': {
             'S3_BUCKET': "",

@@ -19,16 +19,21 @@ but most of them are not maintained and throwing errors. So, this project is aim
 :heavy_plus_sign: [virtualenv](https://pypi.org/project/virtualenv/) installed globally (pip install virtualenv)  
 
 ### Instructions:
-* Create [virtual environment](https://python-guide-cn.readthedocs.io/en/latest/dev/virtualenvs.html) (in this example, the virtualenv will be called "venv")  
-* Install requirements  
+1. Create [virtual environment](https://python-guide-cn.readthedocs.io/en/latest/dev/virtualenvs.html) (in this example, the virtualenv will be called "venv")  
+2. Install requirements  
 ```
 pip install -r requirements.txt
 ```  
-* Fill the details at the [config.json file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag  
-* Run backup.py script  
+3. Generate an API token at https://id.atlassian.com/manage/api-tokens  
+![Screenshot](https://github.com/datreeio/jira-backup-py/tree/master/screenshots/atlassian-api-token.png)  
+4. Fill the details at the [config.json file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag  
+5. Run backup.py script  
 ```
 $(venv) python backup.py 
 ```  
+
+    "JIRA_USER": "user with permissions to https://%JIRA_HOST%.atlassian.net/secure/admin/CloudExport.jspa",
+    "JIRA_PASS": "%JIRA_USER% password",
 
 ### What's next?
 It depends on your needs. I, for example, use this script together with [serverless](https://serverless.com/) to create a periodic [AWS lambda](https://aws.amazon.com/lambda/) which triggered every 4 days, creating a backup and upload it directly to S3.  
@@ -51,6 +56,8 @@ Example for adding a scheduled task which will run every 4 days, at 10:00
 ``` 
 schtasks /create /tn "jira-backup" /sc DAILY /mo 4 /tr "C:\jira-backup-py\win_task_wrapper.bat" /st 10:00
 ```  
+# Changelog:
+* 16 JAN 2019 - Updated script to work w/ [API token](https://confluence.atlassian.com/cloud/api-tokens-938839638.html), instead personal Jira user name and password  
 
 # Resources:
 :heavy_plus_sign: [JIRA support - How to Automate Backups for JIRA Cloud applications](https://confluence.atlassian.com/jirakb/how-to-automate-backups-for-jira-cloud-applications-779160659.html)  
