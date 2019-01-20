@@ -14,12 +14,12 @@ but most of them are not maintained and throwing errors. So, this project is aim
 :black_square_button: Support adding cron / scheduled task from script    
 
 # Installation
-### Prerequisite:  
+## Prerequisite:  
 :heavy_plus_sign: python 2.7.x  
 :heavy_plus_sign: [virtualenv](https://pypi.org/project/virtualenv/) installed globally (pip install virtualenv)  
 
-### Instructions:
-1. Create [virtual environment](https://python-guide-cn.readthedocs.io/en/latest/dev/virtualenvs.html) (in this example, the virtualenv will be called "venv")  
+## Instructions:
+1. Create and start [virtual environment](https://python-guide-cn.readthedocs.io/en/latest/dev/virtualenvs.html) (in this example, the virtualenv will be called "venv")  
 2. Install requirements  
 ```
 pip install -r requirements.txt
@@ -31,11 +31,9 @@ pip install -r requirements.txt
 ```
 $(venv) python backup.py 
 ```  
+![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/terminal.png)  
 
-    "JIRA_USER": "user with permissions to https://%JIRA_HOST%.atlassian.net/secure/admin/CloudExport.jspa",
-    "JIRA_PASS": "%JIRA_USER% password",
-
-### What's next?
+## What's next?
 It depends on your needs. I, for example, use this script together with [serverless](https://serverless.com/) to create a periodic [AWS lambda](https://aws.amazon.com/lambda/) which triggered every 4 days, creating a backup and upload it directly to S3.  
 
 There is a more "stupid" option to get the same result - by creating a cron / scheduled task on your local machine:  
