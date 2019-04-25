@@ -1,3 +1,4 @@
+[![datree-badge](https://s3.amazonaws.com/catalog.static.datree.io/datree-badge-28px.svg)](https://datree.io/?src=badge)
 # Introduction
 JIRA are not (officially) supporting the option of creating automatic backups for their cloud instance.
 This project was created to provide a fully automated infrastructure for backing up Atlassian Cloud JIRA instance on a periodic basis. 
