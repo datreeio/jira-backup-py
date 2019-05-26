@@ -16,7 +16,7 @@ but most of them are not maintained and throwing errors. So, this project is aim
 
 # Installation
 ## Prerequisite:  
-:heavy_plus_sign: python 2.7.x  
+:heavy_plus_sign: python 2.7.x or python 3.x.x  
 :heavy_plus_sign: [virtualenv](https://pypi.org/project/virtualenv/) installed globally (pip install virtualenv)  
 
 ## Instructions:
