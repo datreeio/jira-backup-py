@@ -11,34 +11,52 @@ from time import gmtime, strftime
 
 
 def read_config():
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_config.json')
     with open(config_path, 'r') as config_file:
         return json.load(config_file)
 
 
-class Jira:
+class Atlassian:
     def __init__(self, config):
+        print(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
         self.config = config
-        self.__auth = HTTPBasicAuth(self.config['JIRA_EMAIL'], self.config['API_TOKEN'])
-        self.URL_run_backup = 'https://{}/rest/backup/1/export/runbackup'.format(self.config['JIRA_HOST'])
-        self.URL_download = 'https://{}/plugins/servlet'.format(self.config['JIRA_HOST'])
+        self.__auth = HTTPBasicAuth(self.config['USER_EMAIL'], self.config['API_TOKEN'])
+        self.start_jira_backup = 'https://{}/rest/backup/1/export/runbackup'.format(self.config['HOST_URL'])
+        self.start_confluence_backup = 'https://{}/wiki/rest/obm/1.0/runbackup'.format(self.config['HOST_URL'])
+        self.download_jira_backup = 'https://{}/plugins/servlet'.format(self.config['HOST_URL'])
+        self.payload = {"cbAttachments": self.config['INCLUDE_ATTACHMENTS'], "exportToCloud": "true"}
+        self.headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
         self.backup_status = {}
         self.wait = 30
 
-    def create_backup(self):
-        print(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+    def create_confluence_backup(self):
         print('-> Starting backup; include attachments: {}'.format(self.config['INCLUDE_ATTACHMENTS']))
-        payload = {"cbAttachments": self.config['INCLUDE_ATTACHMENTS'], "exportToCloud": "true"}
-        headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
-        
-        backup = requests.post(self.URL_run_backup, data=json.dumps(payload), headers=headers, auth=self.__auth)
+        session = requests.Session()
+        session.auth = (self.config['USER_EMAIL'], self.config['API_TOKEN'])
+        session.headers.update(self.headers)
+        backup = session.post(self.start_confluence_backup, data=json.dumps(self.payload))
+        if backup.status_code != 200:
+            raise Exception(backup, backup.text)
+        else:
+            print('Backup process successfully started')
+            progress_req = session.get('https://' + self.config['HOST_URL'] + '/wiki/rest/obm/1.0/getprogress')
+            # print('debug: ' + progress_req.text)
+            time.sleep(self.wait)
+            while 'fileName' not in self.backup_status.keys():
+                self.backup_status = json.loads(progress_req.text)
+                print('debug: {}'.format(self.backup_status))
+                time.sleep(2)
+
+    def create_jira_backup(self):
+        print('-> Starting backup; include attachments: {}'.format(self.config['INCLUDE_ATTACHMENTS']))
+        backup = requests.post(self.start_jira_backup, data=json.dumps(self.payload), headers=self.headers, auth=self.__auth)
         if backup.status_code != 200:
             raise Exception(backup, backup.text)
         else:
             task_id = json.loads(backup.text)['taskId']
             print('Backup process successfully started: taskId={}'.format(task_id))
             URL_backup_progress = 'https://{jira_host}/rest/backup/1/export/getProgress?taskId={task_id}'.format(
-                jira_host=self.config['JIRA_HOST'], task_id=task_id)
+                jira_host=self.config['HOST_URL'], task_id=task_id)
             time.sleep(self.wait)
             while 'result' not in self.backup_status.keys():
                 self.backup_status = json.loads(requests.get(URL_backup_progress, auth=self.__auth).text)
@@ -47,7 +65,7 @@ class Jira:
                     progress=self.backup_status['progress'], 
                     description=self.backup_status['description']))
                 time.sleep(self.wait)
-            return '{prefix}/{resultId}'.format(prefix=self.URL_download, resultId=self.backup_status['result'])
+            return '{prefix}/{resultId}'.format(prefix=self.download_jira_backup, resultId=self.backup_status['result'])
 
     def download_file(self, url, local_filename):
         print('-> Downloading file from URL: {}'.format(url))
@@ -83,19 +101,22 @@ class Jira:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', action='store_true', dest='wizard', help='activate config wizard')
+    parser.add_argument('-c', action='store_true', dest='confluence', help='activate confluence backup')
     if parser.parse_args().wizard:
         wizard.create_config() 
     config = read_config()
 
-    if config['JIRA_HOST'] == 'something.atlassian.net':
+    if config['HOST_URL'] == 'something.atlassian.net':
         raise ValueError('You forgated to edit config.json or to run the backup script with "-w" flag')
 
-    jira = Jira(config)
-    backup_url = jira.create_backup()
+    atlass = Atlassian(config)
+    if parser.parse_args().confluence: atlass.create_confluence_backup()
+    else: backup_url = atlass.create_jira_backup()
+    
     file_name = '{}.zip'.format(backup_url.split('/')[-1].replace('?fileId=', ''))
     
     if config['DOWNLOAD_LOCALLY'] == 'true':
-        jira.download_file(backup_url, file_name)  
+        atlass.download_file(backup_url, file_name)  
 
     if config['UPLOAD_TO_S3']['S3_BUCKET'] != '':
-        jira.stream_to_s3(backup_url, file_name)
+        atlass.stream_to_s3(backup_url, file_name)
