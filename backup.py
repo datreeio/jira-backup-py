@@ -11,7 +11,7 @@ from time import gmtime, strftime
 
 
 def read_config():
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_config.yaml')
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
     with open(config_path, 'r') as config_file:
         return yaml.full_load(config_file)
 
@@ -121,5 +121,5 @@ if __name__ == '__main__':
     if config['DOWNLOAD_LOCALLY'] == 'true':
         atlass.download_file(backup_url, file_name)
 
-    if config['UPLOAD_TO_S3'][0]['S3_BUCKET'] != '':
+    if config['UPLOAD_TO_S3']['S3_BUCKET'] != '':
         atlass.stream_to_s3(backup_url, file_name)
