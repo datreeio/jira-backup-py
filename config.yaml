@@ -1,0 +1,10 @@
+--- 
+HOST_URL: "something.atlassian.net"
+USER_EMAIL: "email address for the Atlassian account you're using to create the token (user.name@company.com)"
+API_TOKEN: "token ID generated at https://id.atlassian.com/manage/api-tokens"
+INCLUDE_ATTACHMENTS: "include attachments? this will make the backup size bigger - true / false"
+DOWNLOAD_LOCALLY: "download the backup file to backups folder? true / false"
+UPLOAD_TO_S3: 
+    - S3_BUCKET: "S3 bucket name (empty value will skip this step)" 
+    - AWS_ACCESS_KEY: "not mandatory if already set on the machine with AWS CLI"
+    - AWS_SECRET_KEY: "not mandatory if already set on the machine with AWS CLI"
