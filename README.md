@@ -1,7 +1,7 @@
 [![datree-badge](https://s3.amazonaws.com/catalog.static.datree.io/datree-badge-28px.svg)](https://datree.io/?src=badge)
 # Introduction
-JIRA are not (officially) supporting the option of creating automatic backups for their cloud instance.
-This project was created to provide a fully automated infrastructure for backing up Atlassian Cloud JIRA instance on a periodic basis. 
+Jira and Confluence are not (officially) supporting the option of creating automatic backups for their cloud instance.
+This project was created to provide a fully automated infrastructure for backing up Atlassian Cloud Jira or Confluence instances on a periodic basis. 
 
 There are shell and bash scripts out there, which were created in order to download the backup file locally without the use of the "backup manager" UI, 
 but most of them are not maintained and throwing errors. So, this project is aiming for full backup automation, and therefore this is the features road map: 
@@ -23,12 +23,12 @@ but most of them are not maintained and throwing errors. So, this project is aim
 1. Create and start [virtual environment](https://python-guide-cn.readthedocs.io/en/latest/dev/virtualenvs.html) (in this example, the virtualenv will be called "venv")  
 2. Install requirements  
 ```
-pip install -r requirements.txt
+$(venv) pip install -r requirements.txt
 ```  
 3. Generate an API token at https://id.atlassian.com/manage/api-tokens  
 ![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/atlassian-api-token.png)  
-4. Fill the details at the [config.json file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag  
-5. Run backup.py script  
+4. Fill the details at the [config.yaml file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag  
+5. Run backup.py script with the flag '-j' to backup Jira or '-c' to backup Confluence  
 ```
 $(venv) python backup.py 
 ```  
@@ -56,6 +56,7 @@ Example for adding a scheduled task which will run every 4 days, at 10:00
 schtasks /create /tn "jira-backup" /sc DAILY /mo 4 /tr "C:\jira-backup-py\win_task_wrapper.bat" /st 10:00
 ```  
 # Changelog:
+* 04 SEP 2020 - Support Confluence backup  
 * 16 JAN 2019 - Updated script to work w/ [API token](https://confluence.atlassian.com/cloud/api-tokens-938839638.html), instead personal Jira user name and password  
 
 # Resources:
