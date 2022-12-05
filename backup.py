@@ -92,7 +92,7 @@ class Atlassian:
         r = self.session.get(url, stream=True)
         if r.status_code == 200:
             k = Key(bucket)
-            k.key = "%s%s" % (self.config['UPLOAD_TO_S3']['S3_DIR'], remote_filename)
+            k.key = "{s3_bucket}{s3_filename}".format(s3_bucket=self.config['UPLOAD_TO_S3']['S3_DIR'], s3_filename=remote_filename)
             k.content_type = r.headers['content-type']
             k.set_contents_from_string(r.content)
             return
