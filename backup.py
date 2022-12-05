@@ -7,7 +7,6 @@ import requests
 import boto
 from boto.s3.key import Key
 import wizard
-from time import gmtime, strftime
 
 
 def read_config():
@@ -38,8 +37,8 @@ class Atlassian:
             time.sleep(self.wait)
             while 'fileName' not in self.backup_status.keys():
                 self.backup_status = json.loads(self.session.get(confluence_backup_status).text)
-                print('Current status: {progress}; {description}'.format( 
-                    progress=self.backup_status['alternativePercentage'], 
+                print('Current status: {progress}; {description}'.format(
+                    progress=self.backup_status['alternativePercentage'],
                     description=self.backup_status['currentStatus']))
                 time.sleep(self.wait)
             return 'https://{url}/wiki/download/{file_name}'.format(
@@ -58,8 +57,8 @@ class Atlassian:
             while 'result' not in self.backup_status.keys():
                 self.backup_status = json.loads(self.session.get(jira_backup_status).text)
                 print('Current status: {status} {progress}; {description}'.format(
-                    status=self.backup_status['status'], 
-                    progress=self.backup_status['progress'], 
+                    status=self.backup_status['status'],
+                    progress=self.backup_status['progress'],
                     description=self.backup_status['description']))
                 time.sleep(self.wait)
             return '{prefix}/{result_id}'.format(
@@ -82,15 +81,18 @@ class Atlassian:
             connect = boto.connect_s3()
         else:
             connect = boto.connect_s3(
-                aws_access_key_id=self.config['UPLOAD_TO_S3']['AWS_ACCESS_KEY'], 
-                aws_secret_access_key=self.config['UPLOAD_TO_S3']['AWS_SECRET_KEY']
+                host=self.config['UPLOAD_TO_S3']['AWS_ENDPOINT_URL'],
+                aws_access_key_id=self.config['UPLOAD_TO_S3']['AWS_ACCESS_KEY'],
+                aws_secret_access_key=self.config['UPLOAD_TO_S3']['AWS_SECRET_KEY'],
+                is_secure=self.config['UPLOAD_TO_S3']['AWS_IS_SECURE']
                 )
+            connect.auth_region_name = self.config['UPLOAD_TO_S3']['AWS_REGION']
 
         bucket = connect.get_bucket(self.config['UPLOAD_TO_S3']['S3_BUCKET'])
         r = self.session.get(url, stream=True)
         if r.status_code == 200:
             k = Key(bucket)
-            k.key = remote_filename
+            k.key = "{s3_bucket}{s3_filename}".format(s3_bucket=self.config['UPLOAD_TO_S3']['S3_DIR'], s3_filename=remote_filename)
             k.content_type = r.headers['content-type']
             k.set_contents_from_string(r.content)
             return
