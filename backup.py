@@ -4,8 +4,8 @@ import time
 import os
 import argparse
 import requests
-import boto
-from boto.s3.key import Key
+import boto3
+from boto3.s3.transfer import TransferConfig
 import wizard
 
 
@@ -78,25 +78,40 @@ class Atlassian:
         print('-> Streaming to S3')
 
         if self.config['UPLOAD_TO_S3']['AWS_ACCESS_KEY'] == '':
-            connect = boto.connect_s3()
+            s3_client = boto3.client('s3')
         else:
-            connect = boto.connect_s3(
-                host=self.config['UPLOAD_TO_S3']['AWS_ENDPOINT_URL'],
+            s3_client = boto3.client(
+                's3',
                 aws_access_key_id=self.config['UPLOAD_TO_S3']['AWS_ACCESS_KEY'],
                 aws_secret_access_key=self.config['UPLOAD_TO_S3']['AWS_SECRET_KEY'],
-                is_secure=self.config['UPLOAD_TO_S3']['AWS_IS_SECURE']
-                )
-            connect.auth_region_name = self.config['UPLOAD_TO_S3']['AWS_REGION']
+                region_name=self.config['UPLOAD_TO_S3']['AWS_REGION'],
+                endpoint_url=self.config['UPLOAD_TO_S3']['AWS_ENDPOINT_URL'],
+                use_ssl=self.config['UPLOAD_TO_S3']['AWS_IS_SECURE']
+            )
 
-        bucket = connect.get_bucket(self.config['UPLOAD_TO_S3']['S3_BUCKET'])
+        bucket_name = self.config['UPLOAD_TO_S3']['S3_BUCKET']
         r = self.session.get(url, stream=True)
         if r.status_code == 200:
-            k = Key(bucket)
-            k.key = "{s3_bucket}{s3_filename}".format(s3_bucket=self.config['UPLOAD_TO_S3']['S3_DIR'], s3_filename=remote_filename)
-            k.content_type = r.headers['content-type']
-            k.set_contents_from_string(r.content)
-            return
+            key = "{s3_bucket}{s3_filename}".format(
+                s3_bucket=self.config['UPLOAD_TO_S3']['S3_DIR'],
+                s3_filename=remote_filename
+            )
 
+            content_length = int(r.headers.get('Content-Length', 0))
+
+            config = TransferConfig(
+                multipart_threshold=content_length + 1,
+                max_concurrency=1,
+                use_threads=False
+            )
+
+            s3_client.upload_fileobj(
+                Fileobj=r.raw,
+                Bucket=bucket_name,
+                Key=key,
+                ExtraArgs={'ContentType': r.headers['content-type']},
+                Config=config
+            )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
