@@ -7,7 +7,7 @@ There are shell and bash scripts out there, which were created in order to downl
 but most of them are not maintained and throwing errors. So, this project is aiming for full backup automation, and therefore this is the features road map: 
 
 :white_check_mark: Create a script in python  
-:white_check_mark: Support creating config.json from user input ('wizard')   
+:white_check_mark: Support creating config.yaml from user input ('wizard')   
 :white_check_mark: Download backup file locally  
 :white_check_mark: Add an option to stream backup file to S3  
 :white_check_mark: Check how to manually create a cron task on OS X / Linux  
