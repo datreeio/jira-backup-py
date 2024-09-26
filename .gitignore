@@ -28,3 +28,4 @@ test.py
 backups/*
 !backups/.gitkeep 
 wizard.pyc
+__pycache__/
