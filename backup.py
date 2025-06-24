@@ -203,13 +203,28 @@ def setup_cron_task(script_path, script_dir, frequency_days, time_hour, time_min
         result = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
         existing_cron = result.stdout if result.returncode == 0 else ""
         
-        if 'jira-backup-py' in existing_cron:
-            print("-> Cron job for jira-backup-py already exists. Updating...")
-            lines = existing_cron.strip().split('\n')
-            updated_lines = [line for line in lines if 'jira-backup-py' not in line and script_path not in line]
-            existing_cron = '\n'.join(updated_lines) + '\n' if updated_lines else ""
+        # Remove only the cron entry for the same service type
+        lines = existing_cron.strip().split('\n') if existing_cron.strip() else []
+        updated_lines = []
+        skip_next = False
         
-        new_cron = existing_cron + f"# jira-backup-py automated backup\n{cron_command}\n"
+        for i, line in enumerate(lines):
+            if skip_next:
+                skip_next = False
+                continue
+            
+            # Check if this is a comment line for jira-backup-py
+            if 'jira-backup-py automated backup' in line and f'({service_type})' in line:
+                # Check if the next line contains the cron command for this service
+                if i + 1 < len(lines) and service_flag in lines[i + 1]:
+                    skip_next = True  # Skip both the comment and the command
+                    print(f"-> Updating existing {service_type} backup schedule...")
+                    continue
+            
+            updated_lines.append(line)
+        
+        existing_cron = '\n'.join(updated_lines) + '\n' if updated_lines else ""
+        new_cron = existing_cron + f"# jira-backup-py automated backup ({service_type})\n{cron_command}\n"
         
         process = subprocess.Popen(['crontab', '-'], stdin=subprocess.PIPE, text=True)
         process.communicate(input=new_cron)
@@ -229,7 +244,7 @@ def setup_cron_task(script_path, script_dir, frequency_days, time_hour, time_min
 def setup_windows_task(script_path, script_dir, frequency_days, time_hour, time_minute, service_type):
     python_path = sys.executable
     service_flag = '-j' if service_type == 'jira' else '-c'
-    task_name = f"jira-backup-{service_type}"
+    task_name = f"jira-backup-py-{service_type}"
     
     cmd = [
         'schtasks', '/create',
