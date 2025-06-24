@@ -10,6 +10,8 @@ but most of them are not maintained and throwing errors. So, this project is aim
 :white_check_mark: Support creating config.yaml from user input ('wizard')   
 :white_check_mark: Download backup file locally  
 :white_check_mark: Add an option to stream backup file to S3  
+:white_check_mark: Add an option to stream backup file to Google Cloud Storage
+:white_check_mark: Add an option to stream backup file to Azure Blob Storage
 :white_check_mark: Check how to manually create a cron task on OS X / Linux  
 :white_check_mark: Check how to manually create a schedule task on windows  
 :black_square_button: Support adding cron / scheduled task from script    
@@ -27,15 +29,27 @@ $(venv) pip install -r requirements.txt
 ```  
 3. Generate an API token at https://id.atlassian.com/manage/api-tokens  
 ![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/atlassian-api-token.png)  
-4. Fill the details at the [config.yaml file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag  
-5. Run backup.py script with the flag '-j' to backup Jira or '-c' to backup Confluence  
+4. Fill the details at the [config.yaml file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag
+5. Configure your preferred cloud storage provider(s) in config.yaml:
+   - **For AWS S3**: Set AWS credentials and S3_BUCKET
+   - **For Google Cloud**: Set GCP_PROJECT_ID, GCS_BUCKET, and optionally GCP_SERVICE_ACCOUNT_KEY
+   - **For Azure**: Set AZURE_ACCOUNT_NAME, AZURE_CONTAINER, and either AZURE_CONNECTION_STRING or AZURE_ACCOUNT_KEY  
+6. Run backup.py script with the flag '-j' to backup Jira or '-c' to backup Confluence  
 ```
 $(venv) python backup.py 
 ```  
 ![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/terminal.png)  
 
+## Cloud Storage Support
+The script supports multiple cloud storage providers:
+- **AWS S3** - Configure `UPLOAD_TO_S3` section in config.yaml
+- **Google Cloud Storage** - Configure `UPLOAD_TO_GCP` section in config.yaml  
+- **Azure Blob Storage** - Configure `UPLOAD_TO_AZURE` section in config.yaml
+
+You can use any combination of these providers - the script will upload to all configured destinations.
+
 ## What's next?
-It depends on your needs. I, for example, use this script together with [serverless](https://serverless.com/) to create a periodic [AWS lambda](https://aws.amazon.com/lambda/) which triggered every 4 days, creating a backup and upload it directly to S3.  
+It depends on your needs. You can use this script with any cloud provider or serverless platform. For example, use it with [serverless](https://serverless.com/) to create periodic functions on AWS Lambda, Google Cloud Functions, or Azure Functions that trigger backups and upload to your preferred cloud storage.  
 
 There is a more "stupid" option to get the same result - by creating a cron / scheduled task on your local machine:  
 * **OS X / Linux:** set a cron task with crontab 
@@ -56,6 +70,7 @@ Example for adding a scheduled task which will run every 4 days, at 10:00
 schtasks /create /tn "jira-backup" /sc DAILY /mo 4 /tr "C:\jira-backup-py\win_task_wrapper.bat" /st 10:00
 ```  
 # Changelog:
+* 24 JUN 2025 - Added support for Google Cloud Storage and Azure Blob Storage
 * 04 SEP 2020 - Support Confluence backup  
 * 16 JAN 2019 - Updated script to work w/ [API token](https://confluence.atlassian.com/cloud/api-tokens-938839638.html), instead personal Jira user name and password  
 
