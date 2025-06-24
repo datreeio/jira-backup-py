@@ -309,11 +309,11 @@ if __name__ == '__main__':
     if config['DOWNLOAD_LOCALLY'] == 'true':
         atlass.download_file(backup_url, file_name)
 
-    if config['UPLOAD_TO_S3']['S3_BUCKET'] != '':
+    if 'UPLOAD_TO_S3' in config and config['UPLOAD_TO_S3'].get('S3_BUCKET', '') != '':
         atlass.stream_to_s3(backup_url, file_name)
     
-    if config['UPLOAD_TO_GCP']['GCS_BUCKET'] != '':
+    if 'UPLOAD_TO_GCP' in config and config['UPLOAD_TO_GCP'].get('GCS_BUCKET', '') != '':
         atlass.stream_to_gcs(backup_url, file_name)
     
-    if config['UPLOAD_TO_AZURE']['AZURE_CONTAINER'] != '':
+    if 'UPLOAD_TO_AZURE' in config and config['UPLOAD_TO_AZURE'].get('AZURE_CONTAINER', '') != '':
         atlass.stream_to_azure(backup_url, file_name)

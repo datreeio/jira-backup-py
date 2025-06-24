@@ -33,7 +33,9 @@ $(venv) pip install -r requirements.txt
 5. Configure your preferred cloud storage provider(s) in config.yaml:
    - **For AWS S3**: Set AWS credentials and S3_BUCKET
    - **For Google Cloud**: Set GCP_PROJECT_ID, GCS_BUCKET, and optionally GCP_SERVICE_ACCOUNT_KEY
-   - **For Azure**: Set AZURE_ACCOUNT_NAME, AZURE_CONTAINER, and either AZURE_CONNECTION_STRING or AZURE_ACCOUNT_KEY  
+   - **For Azure**: Set AZURE_ACCOUNT_NAME, AZURE_CONTAINER, and either AZURE_CONNECTION_STRING or AZURE_ACCOUNT_KEY
+   
+   **Note**: Cloud storage sections (`UPLOAD_TO_S3`, `UPLOAD_TO_GCP`, `UPLOAD_TO_AZURE`) are optional. You can delete any sections you don't need from your config.yaml file. For example, if you only want to download backups locally, you can remove all three upload sections.
 6. Run backup.py script with the flag '-j' to backup Jira or '-c' to backup Confluence  
 ```
 $(venv) python backup.py 
@@ -67,6 +69,19 @@ The script supports multiple cloud storage providers:
 - **Azure Blob Storage** - Configure `UPLOAD_TO_AZURE` section in config.yaml
 
 You can use any combination of these providers - the script will upload to all configured destinations.
+
+### Minimal Configuration Example
+If you only want to download backups locally without any cloud storage:
+```yaml
+--- 
+HOST_URL: "your-instance.atlassian.net"
+USER_EMAIL: "your.email@company.com"
+API_TOKEN: "your-api-token"
+INCLUDE_ATTACHMENTS: false
+DOWNLOAD_LOCALLY: true
+```
+
+Simply omit any `UPLOAD_TO_XXX` sections you don't need - the script will skip those providers automatically.
 
 ## What's next?
 It depends on your needs. You can use this script with any cloud provider or serverless platform. For example, use it with [serverless](https://serverless.com/) to create periodic functions on AWS Lambda, Google Cloud Functions, or Azure Functions that trigger backups and upload to your preferred cloud storage.
