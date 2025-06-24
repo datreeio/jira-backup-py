@@ -12,3 +12,14 @@ UPLOAD_TO_S3:
     AWS_ACCESS_KEY: "not mandatory if already set on the machine with AWS CLI"
     AWS_SECRET_KEY: "not mandatory if already set on the machine with AWS CLI"
     AWS_IS_SECURE: True
+UPLOAD_TO_GCP:
+    GCP_PROJECT_ID: "GCP project ID"
+    GCS_BUCKET: "GCS bucket name (empty value will skip this step)"
+    GCS_DIR: "GCS directory for upload (example Atlassian/)"
+    GCP_SERVICE_ACCOUNT_KEY: "path to service account key file (optional if using default credentials)"
+UPLOAD_TO_AZURE:
+    AZURE_ACCOUNT_NAME: "Azure storage account name"
+    AZURE_CONTAINER: "Azure container name (empty value will skip this step)"
+    AZURE_DIR: "Azure directory for upload (example Atlassian/)"
+    AZURE_CONNECTION_STRING: "Azure storage connection string (optional if using account key)"
+    AZURE_ACCOUNT_KEY: "Azure storage account key (optional if using connection string)"

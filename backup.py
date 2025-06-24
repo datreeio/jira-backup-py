@@ -6,6 +6,8 @@ import argparse
 import requests
 import boto3
 from boto3.s3.transfer import TransferConfig
+from google.cloud import storage
+from azure.storage.blob import BlobServiceClient
 import wizard
 
 
@@ -113,6 +115,66 @@ class Atlassian:
                 Config=config
             )
 
+    def stream_to_gcs(self, url, remote_filename):
+        print('-> Streaming to GCS')
+        
+        if self.config['UPLOAD_TO_GCP']['GCP_SERVICE_ACCOUNT_KEY']:
+            client = storage.Client.from_service_account_json(
+                self.config['UPLOAD_TO_GCP']['GCP_SERVICE_ACCOUNT_KEY'],
+                project=self.config['UPLOAD_TO_GCP']['GCP_PROJECT_ID']
+            )
+        else:
+            client = storage.Client(project=self.config['UPLOAD_TO_GCP']['GCP_PROJECT_ID'])
+        
+        bucket_name = self.config['UPLOAD_TO_GCP']['GCS_BUCKET']
+        bucket = client.bucket(bucket_name)
+        
+        r = self.session.get(url, stream=True)
+        if r.status_code == 200:
+            blob_name = "{gcs_dir}{filename}".format(
+                gcs_dir=self.config['UPLOAD_TO_GCP']['GCS_DIR'],
+                filename=remote_filename
+            )
+            
+            blob = bucket.blob(blob_name)
+            blob.content_type = r.headers.get('content-type', 'application/zip')
+            
+            blob.upload_from_file(r.raw, content_type=blob.content_type)
+
+    def stream_to_azure(self, url, remote_filename):
+        print('-> Streaming to Azure Blob Storage')
+        
+        if self.config['UPLOAD_TO_AZURE']['AZURE_CONNECTION_STRING']:
+            blob_service_client = BlobServiceClient.from_connection_string(
+                self.config['UPLOAD_TO_AZURE']['AZURE_CONNECTION_STRING']
+            )
+        else:
+            account_url = f"https://{self.config['UPLOAD_TO_AZURE']['AZURE_ACCOUNT_NAME']}.blob.core.windows.net"
+            blob_service_client = BlobServiceClient(
+                account_url=account_url,
+                credential=self.config['UPLOAD_TO_AZURE']['AZURE_ACCOUNT_KEY']
+            )
+        
+        container_name = self.config['UPLOAD_TO_AZURE']['AZURE_CONTAINER']
+        
+        r = self.session.get(url, stream=True)
+        if r.status_code == 200:
+            blob_name = "{azure_dir}{filename}".format(
+                azure_dir=self.config['UPLOAD_TO_AZURE']['AZURE_DIR'],
+                filename=remote_filename
+            )
+            
+            blob_client = blob_service_client.get_blob_client(
+                container=container_name,
+                blob=blob_name
+            )
+            
+            blob_client.upload_blob(
+                r.raw,
+                content_type=r.headers.get('content-type', 'application/zip'),
+                overwrite=True
+            )
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', action='store_true', dest='wizard', help='activate config wizard')
@@ -140,3 +202,9 @@ if __name__ == '__main__':
 
     if config['UPLOAD_TO_S3']['S3_BUCKET'] != '':
         atlass.stream_to_s3(backup_url, file_name)
+    
+    if config['UPLOAD_TO_GCP']['GCS_BUCKET'] != '':
+        atlass.stream_to_gcs(backup_url, file_name)
+    
+    if config['UPLOAD_TO_AZURE']['AZURE_CONTAINER'] != '':
+        atlass.stream_to_azure(backup_url, file_name)
