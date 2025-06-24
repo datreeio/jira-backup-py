@@ -14,7 +14,7 @@ but most of them are not maintained and throwing errors. So, this project is aim
 :white_check_mark: Add an option to stream backup file to Azure Blob Storage
 :white_check_mark: Check how to manually create a cron task on OS X / Linux  
 :white_check_mark: Check how to manually create a schedule task on windows  
-:black_square_button: Support adding cron / scheduled task from script    
+:white_check_mark: Support adding cron / scheduled task from script    
 
 # Installation
 ## Prerequisite:  
@@ -38,7 +38,27 @@ $(venv) pip install -r requirements.txt
 ```
 $(venv) python backup.py 
 ```  
-![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/terminal.png)  
+![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/terminal.png)
+
+## Automated Scheduling
+You can now automatically set up scheduled backups using the built-in scheduling feature:
+
+```bash
+# Setup automated Jira backup every 4 days at 10:00 AM
+python backup.py -s
+
+# Setup automated Confluence backup every 7 days at 2:30 PM  
+python backup.py -s --schedule-days 7 --schedule-time 14:30 --schedule-service confluence
+
+# Setup automated Jira backup every 2 days at 6:00 AM
+python backup.py -s --schedule-days 2 --schedule-time 06:00 --schedule-service jira
+```
+
+This will automatically create:
+- **Linux/macOS**: A cron job in your crontab
+- **Windows**: A scheduled task in Task Scheduler
+
+The script automatically detects your operating system and creates the appropriate scheduled task.  
 
 ## Cloud Storage Support
 The script supports multiple cloud storage providers:
@@ -49,9 +69,10 @@ The script supports multiple cloud storage providers:
 You can use any combination of these providers - the script will upload to all configured destinations.
 
 ## What's next?
-It depends on your needs. You can use this script with any cloud provider or serverless platform. For example, use it with [serverless](https://serverless.com/) to create periodic functions on AWS Lambda, Google Cloud Functions, or Azure Functions that trigger backups and upload to your preferred cloud storage.  
+It depends on your needs. You can use this script with any cloud provider or serverless platform. For example, use it with [serverless](https://serverless.com/) to create periodic functions on AWS Lambda, Google Cloud Functions, or Azure Functions that trigger backups and upload to your preferred cloud storage.
 
-There is a more "stupid" option to get the same result - by creating a cron / scheduled task on your local machine:  
+## Manual Scheduling (Alternative)
+If you prefer to manually create scheduled tasks instead of using the automated scheduling feature, you can still create a cron / scheduled task on your local machine:  
 * **OS X / Linux:** set a cron task with crontab 
 ``` 
 echo "* * * * * cd %script dir% && %activate virtualenv% && python backup.py > %log name% 2>&1" | crontab -
@@ -70,6 +91,7 @@ Example for adding a scheduled task which will run every 4 days, at 10:00
 schtasks /create /tn "jira-backup" /sc DAILY /mo 4 /tr "C:\jira-backup-py\win_task_wrapper.bat" /st 10:00
 ```  
 # Changelog:
+* 24 JUN 2025 - Added automated scheduling support for cron/scheduled tasks
 * 24 JUN 2025 - Added support for Google Cloud Storage and Azure Blob Storage
 * 04 SEP 2020 - Support Confluence backup  
 * 16 JAN 2019 - Updated script to work w/ [API token](https://confluence.atlassian.com/cloud/api-tokens-938839638.html), instead personal Jira user name and password  
