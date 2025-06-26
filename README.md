@@ -1,65 +1,205 @@
+# Jira Backup Python
+
 [![datree-badge](https://s3.amazonaws.com/catalog.static.datree.io/datree-badge-28px.svg)](https://datree.io/?src=badge)
-# Introduction
-Jira and Confluence are not (officially) supporting the option of creating automatic backups for their cloud instance.
-This project was created to provide a fully automated infrastructure for backing up Atlassian Cloud Jira or Confluence instances on a periodic basis. 
+[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-There are shell and bash scripts out there, which were created in order to download the backup file locally without the use of the "backup manager" UI, 
-but most of them are not maintained and throwing errors. So, this project is aiming for full backup automation, and therefore this is the features road map: 
+A Python-based backup tool for Atlassian Cloud Jira and Confluence instances with multi-cloud storage support and automated scheduling.
 
-:white_check_mark: Create a script in python  
-:white_check_mark: Support creating config.yaml from user input ('wizard')   
-:white_check_mark: Download backup file locally  
-:white_check_mark: Add an option to stream backup file to S3  
-:white_check_mark: Check how to manually create a cron task on OS X / Linux  
-:white_check_mark: Check how to manually create a schedule task on windows  
-:black_square_button: Support adding cron / scheduled task from script    
+## 🚀 Features
 
-# Installation
-## Prerequisite:  
-:heavy_plus_sign: python 3  
-:heavy_plus_sign: [virtualenv](https://pypi.org/project/virtualenv/) installed globally (pip install virtualenv)  
+- **Jira & Confluence Backups**: Create backups for both Jira and Confluence Cloud instances
+- **Multi-Cloud Support**: Stream backups directly to AWS S3, Google Cloud Storage, or Azure Blob Storage
+- **Local Download**: Option to download backup files locally
+- **Cross-Platform Scheduling**: Automatically create cron jobs (Linux/macOS) or scheduled tasks (Windows)
+- **Configuration Wizard**: Interactive setup for easy configuration
+- **API Token Authentication**: Secure authentication using Atlassian API tokens
 
-## Instructions:
-1. Create and start [virtual environment](https://python-guide-cn.readthedocs.io/en/latest/dev/virtualenvs.html) (in this example, the virtualenv will be called "venv")  
-2. Install requirements  
+## 📋 Prerequisites
+
+- Python 3.7 or higher
+- Atlassian Cloud account (Jira and/or Confluence)
+- API token from [Atlassian](https://id.atlassian.com/manage/api-tokens)
+- (Optional) Cloud storage account: AWS, Google Cloud, or Azure
+
+## 🛠️ Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/jira-backup-py.git
+   cd jira-backup-py
+   ```
+
+2. **Create a virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Generate API token**
+   - Go to [Atlassian API Tokens](https://id.atlassian.com/manage/api-tokens) and create a token
+   
+5. **Configure the application**
+   - Create a `config.yaml` file with your settings (see Configuration section below)
+   - Or run the configuration wizard: `python backup.py -w`
+
+## ⚙️ Configuration
+
+### Configuration File Setup
+
+Create a `config.yaml` file with your settings:
+
+```yaml
+---
+HOST_URL: "your-instance.atlassian.net"
+USER_EMAIL: "your.email@company.com"
+API_TOKEN: "your-api-token"
+INCLUDE_ATTACHMENTS: false
+DOWNLOAD_LOCALLY: true
+
+# AWS S3 Configuration (optional)
+UPLOAD_TO_S3:
+  S3_BUCKET: "my-backup-bucket"
+  AWS_ACCESS_KEY_ID: "your-access-key"
+  AWS_SECRET_ACCESS_KEY: "your-secret-key"
+  AWS_S3_REGION: "us-east-1"
+
+# Google Cloud Storage Configuration (optional)
+UPLOAD_TO_GCP:
+  GCP_PROJECT_ID: "my-project-id"
+  GCS_BUCKET: "my-backup-bucket"
+  GCP_SERVICE_ACCOUNT_KEY: "/path/to/service-account-key.json"
+
+# Azure Blob Storage Configuration (optional)
+UPLOAD_TO_AZURE:
+  AZURE_ACCOUNT_NAME: "mystorageaccount"
+  AZURE_CONTAINER: "my-backup-container"
+  AZURE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=..."
+  # OR use AZURE_ACCOUNT_KEY instead of connection string
+  # AZURE_ACCOUNT_KEY: "your-account-key"
 ```
-$(venv) pip install -r requirements.txt
-```  
-3. Generate an API token at https://id.atlassian.com/manage/api-tokens  
-![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/atlassian-api-token.png)  
-4. Fill the details at the [config.yaml file](https://github.com/datreeio/jira-backup-py/blob/master/config.json) or run the backup.py script with '-w' flag  
-5. Run backup.py script with the flag '-j' to backup Jira or '-c' to backup Confluence  
+
+### Configuration Wizard
+
+For interactive setup, run:
+```bash
+python backup.py -w
 ```
-$(venv) python backup.py 
-```  
-![Screenshot](https://github.com/datreeio/jira-backup-py/blob/master/screenshots/terminal.png)  
 
-## What's next?
-It depends on your needs. I, for example, use this script together with [serverless](https://serverless.com/) to create a periodic [AWS lambda](https://aws.amazon.com/lambda/) which triggered every 4 days, creating a backup and upload it directly to S3.  
+This will guide you through setting up basic Jira credentials and S3 configuration.
 
-There is a more "stupid" option to get the same result - by creating a cron / scheduled task on your local machine:  
-* **OS X / Linux:** set a cron task with crontab 
-``` 
-echo "* * * * * cd %script dir% && %activate virtualenv% && python backup.py > %log name% 2>&1" | crontab -
-```  
-Example for adding a cron task which will run every 4 days, at 10:00  
+## 🚀 Usage
+
+### Manual Backup
+
+```bash
+# Backup Jira (default)
+python backup.py -j
+
+# Backup Confluence
+python backup.py -c
+
+# Run configuration wizard
+python backup.py -w
 ```
-echo "0 10 */4 * * cd ~/Dev/jira-backup-py && source venv/bin/activate && python backup.py > backup_script.log 2>&1" | crontab -
-```  
 
-* **Windows:** set a scheduled task with task scheduler  
-``` 
-schtasks /create /tn "%task name%" /sc DAILY /mo %number of days% /tr "%full path to win_task_wrapper.bat%" /st %start time%
-```  
-Example for adding a scheduled task which will run every 4 days, at 10:00  
-``` 
-schtasks /create /tn "jira-backup" /sc DAILY /mo 4 /tr "C:\jira-backup-py\win_task_wrapper.bat" /st 10:00
-```  
-# Changelog:
-* 04 SEP 2020 - Support Confluence backup  
-* 16 JAN 2019 - Updated script to work w/ [API token](https://confluence.atlassian.com/cloud/api-tokens-938839638.html), instead personal Jira user name and password  
+### Automated Scheduling
 
-# Resources:
-:heavy_plus_sign: [JIRA support - How to Automate Backups for JIRA Cloud applications](https://confluence.atlassian.com/jirakb/how-to-automate-backups-for-jira-cloud-applications-779160659.html)  
-:heavy_plus_sign: [Atlassian Labs' automatic-cloud-backup script](https://bitbucket.org/atlassianlabs/automatic-cloud-backup/src/d43ca5f33192e78b2e1869ab7c708bb32bfd7197/backup.ps1?at=master&fileviewer=file-view-default)  
-:heavy_plus_sign: [A more maintainable version of Atlassian Labs' script](https://github.com/mattock/automatic-cloud-backup)  
+Set up scheduled backups using system schedulers:
+
+```bash
+# Setup automated Jira backup every 4 days at 10:00 AM (default)
+python backup.py -s
+
+# Setup automated Confluence backup every 7 days at 2:30 PM  
+python backup.py -s --schedule-days 7 --schedule-time 14:30 --schedule-service confluence
+
+# Setup automated Jira backup every 2 days at 6:00 AM
+python backup.py -s --schedule-days 2 --schedule-time 06:00 --schedule-service jira
+```
+
+This will create:
+- **Linux/macOS**: A cron job in your crontab
+- **Windows**: A scheduled task in Task Scheduler
+
+### Command Line Options
+
+| Option | Description |
+|--------|-------------|
+| `-j, --jira` | Backup Jira (default if no service specified) |
+| `-c, --confluence` | Backup Confluence |
+| `-w, --wizard` | Run configuration wizard |
+| `-s, --schedule` | Setup automated scheduled backup |
+| `--schedule-days` | Frequency in days for scheduled backup (default: 4) |
+| `--schedule-time` | Time for scheduled backup in HH:MM format (default: 10:00) |
+| `--schedule-service` | Service for scheduled backup (jira/confluence, default: jira) |
+
+## 🔧 Advanced Configuration
+
+### Minimal Configuration
+
+If you only want to download backups locally without cloud storage:
+
+```yaml
+---
+HOST_URL: "your-instance.atlassian.net"
+USER_EMAIL: "your.email@company.com"
+API_TOKEN: "your-api-token"
+INCLUDE_ATTACHMENTS: false
+DOWNLOAD_LOCALLY: true
+```
+
+Simply omit the `UPLOAD_TO_XXX` sections you don't need.
+
+### Multiple Cloud Providers
+
+You can configure multiple cloud storage providers simultaneously - the script will upload to all configured destinations:
+
+```yaml
+UPLOAD_TO_S3:
+  S3_BUCKET: "my-s3-bucket"
+  # ... S3 config
+
+UPLOAD_TO_GCP:
+  GCS_BUCKET: "my-gcs-bucket"
+  # ... GCP config
+
+UPLOAD_TO_AZURE:
+  AZURE_CONTAINER: "my-azure-container"
+  # ... Azure config
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit issues and pull requests.
+
+## 📝 Changelog
+
+- **2025-06-24**: Added separate cron schedules for Jira and Confluence backups
+- **2025-06-24**: Made cloud storage configuration sections optional
+- **2025-06-24**: Added automated scheduling support for backup tasks
+- **2025-06-23**: Added Google Cloud Storage and Azure Blob Storage support
+- **2020-09-04**: Added Confluence backup support
+- **2019-01-16**: Updated to use API tokens instead of passwords
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Original concept inspired by [Atlassian Labs' automatic-cloud-backup](https://bitbucket.org/atlassianlabs/automatic-cloud-backup/)
+- Thanks to all contributors who have helped improve this project
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/jira-backup-py/issues)
+
+---
+
+**Note**: This tool is not officially supported by Atlassian. Use at your own risk and always verify your backups are working correctly.
