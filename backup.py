@@ -14,9 +14,10 @@ import subprocess
 import sys
 
 
-def read_config():
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
-    with open(config_path, 'r') as config_file:
+def read_config(path=''):
+    if path == '':
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
+    with open(path, 'r') as config_file:
         return yaml.full_load(config_file)
 
 
@@ -270,6 +271,7 @@ def setup_windows_task(script_path, script_dir, frequency_days, time_hour, time_
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-C', type=str, dest='config_file', default='', help='path to config file')
     parser.add_argument('-w', action='store_true', dest='wizard', help='activate config wizard')
     parser.add_argument('-c', action='store_true', dest='confluence', help='activate confluence backup')
     parser.add_argument('-j', action='store_true', dest='jira', help='activate jira backup')
@@ -307,10 +309,10 @@ if __name__ == '__main__':
             print(f"-> Error setting up scheduled task: {e}")
             exit(1)
     
-    config = read_config()
+    config = read_config(args.config_file)
 
     if config['HOST_URL'] == 'something.atlassian.net':
-        raise ValueError('You forgated to edit config.json or to run the backup script with "-w" flag')
+        raise ValueError('You forgot to edit config.yaml or to run the backup script with "-w" flag')
 
     print('-> Starting backup; include attachments: {}'.format(config['INCLUDE_ATTACHMENTS']))
     atlass = Atlassian(config)
