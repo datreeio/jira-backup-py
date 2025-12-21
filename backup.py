@@ -30,6 +30,7 @@ class Atlassian:
         self.payload = {"cbAttachments": self.config['INCLUDE_ATTACHMENTS'], "exportToCloud": "true"}
         self.start_confluence_backup = 'https://{}/wiki/rest/obm/1.0/runbackup'.format(self.config['HOST_URL'])
         self.start_jira_backup = 'https://{}/rest/backup/1/export/runbackup'.format(self.config['HOST_URL'])
+        self.get_last_jira_backup = 'https://{}/rest/backup/1/export/lastTaskId'.format(self.config['HOST_URL'])
         self.backup_status = {}
         self.wait = 10
 
@@ -53,23 +54,35 @@ class Atlassian:
 
     def create_jira_backup(self):
         backup = self.session.post(self.start_jira_backup, data=json.dumps(self.payload))
-        if backup.status_code != 200:
-            raise Exception(backup, backup.text)
-        else:
+        task_id = ""
+
+        if backup.status_code == 412:
+            print('-> Backup already exists. Atlassian said: {}'.format(backup.text))
+            backup = self.session.get(self.get_last_jira_backup)
+            if backup.status_code == 200:
+                print('-> Downloading existing backup: taskId={}'.format(task_id))
+                task_id = backup.text
+            else:
+                raise Exception(backup, backup.text)
+
+        elif backup.status_code == 200:
             task_id = json.loads(backup.text)['taskId']
             print('-> Backup process successfully started: taskId={}'.format(task_id))
-            jira_backup_status = 'https://{jira_host}/rest/backup/1/export/getProgress?taskId={task_id}'.format(
-                jira_host=self.config['HOST_URL'], task_id=task_id)
+        else:
+            raise Exception(backup, backup.text)
+
+        jira_backup_status = 'https://{jira_host}/rest/backup/1/export/getProgress?taskId={task_id}'.format(
+            jira_host=self.config['HOST_URL'], task_id=task_id)
+        time.sleep(self.wait)
+        while 'result' not in self.backup_status.keys():
+            self.backup_status = json.loads(self.session.get(jira_backup_status).text)
+            print('Current status: {status} {progress}; {description}'.format(
+                status=self.backup_status['status'],
+                progress=self.backup_status['progress'],
+                description=self.backup_status['description']))
             time.sleep(self.wait)
-            while 'result' not in self.backup_status.keys():
-                self.backup_status = json.loads(self.session.get(jira_backup_status).text)
-                print('Current status: {status} {progress}; {description}'.format(
-                    status=self.backup_status['status'],
-                    progress=self.backup_status['progress'],
-                    description=self.backup_status['description']))
-                time.sleep(self.wait)
-            return '{prefix}/{result_id}'.format(
-                prefix='https://' + self.config['HOST_URL'] + '/plugins/servlet', result_id=self.backup_status['result'])
+        return '{prefix}/{result_id}'.format(
+            prefix='https://' + self.config['HOST_URL'] + '/plugins/servlet', result_id=self.backup_status['result'])
 
     def download_file(self, url, local_filename):
         print('-> Downloading file from URL: {}'.format(url))
