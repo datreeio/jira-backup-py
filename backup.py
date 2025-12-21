@@ -35,20 +35,21 @@ class Atlassian:
 
     def create_confluence_backup(self):
         backup = self.session.post(self.start_confluence_backup, data=json.dumps(self.payload))
-        if backup.status_code != 200:
+
+        if backup.status_code not in (200, 406):
             raise Exception(backup, backup.text)
-        else:
-            print('-> Backup process successfully started')
-            confluence_backup_status = 'https://{}/wiki/rest/obm/1.0/getprogress'.format(self.config['HOST_URL'])
+
+        print('-> Backup process successfully started')
+        confluence_backup_status = 'https://{}/wiki/rest/obm/1.0/getprogress'.format(self.config['HOST_URL'])
+        time.sleep(self.wait)
+        while 'fileName' not in self.backup_status.keys():
+            self.backup_status = json.loads(self.session.get(confluence_backup_status).text)
+            print('Current status: {progress}; {description}'.format(
+                progress=self.backup_status['alternativePercentage'],
+                description=self.backup_status['currentStatus']))
             time.sleep(self.wait)
-            while 'fileName' not in self.backup_status.keys():
-                self.backup_status = json.loads(self.session.get(confluence_backup_status).text)
-                print('Current status: {progress}; {description}'.format(
-                    progress=self.backup_status['alternativePercentage'],
-                    description=self.backup_status['currentStatus']))
-                time.sleep(self.wait)
-            return 'https://{url}/wiki/download/{file_name}'.format(
-                url=self.config['HOST_URL'], file_name=self.backup_status['fileName'])
+        return 'https://{url}/wiki/download/{file_name}'.format(
+            url=self.config['HOST_URL'], file_name=self.backup_status['fileName'])
 
     def create_jira_backup(self):
         backup = self.session.post(self.start_jira_backup, data=json.dumps(self.payload))
