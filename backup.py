@@ -117,20 +117,10 @@ class Atlassian:
                 s3_filename=remote_filename
             )
 
-            content_length = int(r.headers.get('Content-Length', 0))
-
-            config = TransferConfig(
-                multipart_threshold=content_length + 1,
-                max_concurrency=1,
-                use_threads=False
-            )
-
-            s3_client.upload_fileobj(
-                Fileobj=r.raw,
+            s3_client.upload_fileobj(r.raw,
                 Bucket=bucket_name,
                 Key=key,
-                ExtraArgs={'ContentType': r.headers['content-type']},
-                Config=config
+                ExtraArgs={'ContentType': r.headers['content-type']}
             )
 
     def stream_to_gcs(self, url, remote_filename):
