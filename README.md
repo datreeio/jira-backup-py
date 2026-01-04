@@ -82,6 +82,11 @@ UPLOAD_TO_AZURE:
   AZURE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=..."
   # OR use AZURE_ACCOUNT_KEY instead of connection string
   # AZURE_ACCOUNT_KEY: "your-account-key"
+
+# Custom Filename (optional)
+CUSTOM_FILENAME:
+  JIRA: "jira.{timestamp}"
+  CONFLUENCE: "confluence.{timestamp}"
 ```
 
 ### Configuration Wizard

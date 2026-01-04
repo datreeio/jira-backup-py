@@ -34,6 +34,40 @@ class Atlassian:
         self.backup_status = {}
         self.wait = 10
 
+    def generate_filename(self, backup_url, backup_type='jira'):
+        """
+        Generate filename based on config or default pattern.
+        Supports placeholders:
+        - {timestamp} - Current timestamp in format DDMMYYYY_HHMM
+        - {date} - Current date in format YYYY-MM-DD
+        - {time} - Current time in format HHMM
+        - {uuid} - UUID from backup URL
+        - {type} - Backup type (jira or confluence)
+        """
+        uuid = backup_url.split('/')[-1].replace('?fileId=', '')
+        timestamp = time.strftime('%d%m%Y_%H%M')
+
+        custom_pattern = self.config.get('CUSTOM_FILENAME', {})
+
+        if backup_type == 'confluence':
+            pattern = custom_pattern.get('CONFLUENCE', '')
+        else:
+            pattern = custom_pattern.get('JIRA', '')
+
+        if pattern:
+            filename = pattern.format(
+                timestamp=timestamp,
+                date=time.strftime('%Y-%m-%d'),
+                time=time.strftime('%H%M'),
+                uuid=uuid,
+                type=backup_type
+            )
+            if not filename.endswith('.zip'):
+                filename += '.zip'
+            return filename
+        else:
+            return '{timestamp}_{uuid}.zip'.format(timestamp=timestamp, uuid=uuid)
+
     def create_confluence_backup(self):
         backup = self.session.post(self.start_confluence_backup, data=json.dumps(self.payload))
 
@@ -319,13 +353,18 @@ if __name__ == '__main__':
         raise ValueError('You forgot to edit config.yaml or to run the backup script with "-w" flag')
 
     print('-> Starting backup; include attachments: {}'.format(config['INCLUDE_ATTACHMENTS']))
+
     atlass = Atlassian(config)
-    if args.confluence: backup_url = atlass.create_confluence_backup()
-    else: backup_url = atlass.create_jira_backup()
+    
+    backup_type = 'confluence' if args.confluence else 'jira'
+    if args.confluence:
+        backup_url = atlass.create_confluence_backup()
+    else:
+        backup_url = atlass.create_jira_backup()
 
     print('-> Backup URL: {}'.format(backup_url))
-    file_name = '{timestemp}_{uuid}.zip'.format(
-        timestemp=time.strftime('%d%m%Y_%H%M'), uuid=backup_url.split('/')[-1].replace('?fileId=', ''))
+    file_name = atlass.generate_filename(backup_url, backup_type)
+    print('-> Generated filename: {}'.format(file_name))
 
     if config['DOWNLOAD_LOCALLY'] == 'true':
         atlass.download_file(backup_url, file_name)
