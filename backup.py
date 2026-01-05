@@ -12,6 +12,7 @@ import wizard
 import platform
 import subprocess
 import sys
+import urllib3
 
 
 def read_config(path=''):
@@ -118,15 +119,60 @@ class Atlassian:
         return '{prefix}/{result_id}'.format(
             prefix='https://' + self.config['HOST_URL'] + '/plugins/servlet', result_id=self.backup_status['result'])
 
-    def download_file(self, url, local_filename):
+    def download_file(self, url, local_filename, max_retries=5):
         print('-> Downloading file from URL: {}'.format(url))
-        r = self.session.get(url, stream=True)
         file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups', local_filename)
-        with open(file_path, 'wb') as file_:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk:
-                    file_.write(chunk)
-        print(file_path)
+
+        # Prüfen ob bereits teilweise heruntergeladen
+        downloaded_bytes = 0
+        if os.path.exists(file_path):
+            downloaded_bytes = os.path.getsize(file_path)
+            print('-> Resuming download from byte {}'.format(downloaded_bytes))
+
+        for attempt in range(max_retries):
+            try:
+                headers = {}
+                if downloaded_bytes > 0:
+                    headers['Range'] = f'bytes={downloaded_bytes}-'
+
+                r = self.session.get(url, stream=True, headers=headers, timeout=60)
+            
+                # Gesamtgrösse ermitteln
+                if 'content-range' in r.headers:
+                    total_size = int(r.headers['content-range'].split('/')[-1])
+                elif 'content-length' in r.headers:
+                    total_size = int(r.headers['content-length']) + downloaded_bytes
+                else:
+                    total_size = 0
+            
+                mode = 'ab' if downloaded_bytes > 0 else 'wb'
+            
+                with open(file_path, mode) as file_:
+                    for chunk in r.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
+                        if chunk:
+                            file_.write(chunk)
+                            downloaded_bytes += len(chunk)
+                        
+                            # Fortschritt anzeigen
+                            if total_size > 0:
+                                percent = (downloaded_bytes / total_size) * 100
+                                downloaded_gb = downloaded_bytes / (1024**3)
+                                total_gb = total_size / (1024**3)
+                                print(f'\r-> Progress: {percent:.1f}% ({downloaded_gb:.2f} GB / {total_gb:.2f} GB)', end='', flush=True)
+            
+                print('\n-> Download completed: {}'.format(file_path))
+                return file_path
+            
+            except (requests.exceptions.RequestException, urllib3.exceptions.ProtocolError) as e:
+                print(f'\n-> Download interrupted: {e}')
+                print(f'-> Retry {attempt + 1}/{max_retries} in 10 seconds...')
+                time.sleep(10)
+
+                # Aktualisiere downloaded_bytes für Resume
+                if os.path.exists(file_path):
+                    downloaded_bytes = os.path.getsize(file_path)
+
+        raise Exception(f'Download failed after {max_retries} retries')
 
     def stream_to_s3(self, url, remote_filename):
         print('-> Streaming to S3')
