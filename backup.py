@@ -123,7 +123,7 @@ class Atlassian:
         print('-> Downloading file from URL: {}'.format(url))
         file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backups', local_filename)
 
-        # Prüfen ob bereits teilweise heruntergeladen
+        # check if alredy downloaded partially
         downloaded_bytes = 0
         if os.path.exists(file_path):
             downloaded_bytes = os.path.getsize(file_path)
@@ -136,39 +136,39 @@ class Atlassian:
                     headers['Range'] = f'bytes={downloaded_bytes}-'
 
                 r = self.session.get(url, stream=True, headers=headers, timeout=60)
-            
-                # Gesamtgrösse ermitteln
+
+                # get complete size
                 if 'content-range' in r.headers:
                     total_size = int(r.headers['content-range'].split('/')[-1])
                 elif 'content-length' in r.headers:
                     total_size = int(r.headers['content-length']) + downloaded_bytes
                 else:
                     total_size = 0
-            
+
                 mode = 'ab' if downloaded_bytes > 0 else 'wb'
-            
+
                 with open(file_path, mode) as file_:
                     for chunk in r.iter_content(chunk_size=1024 * 1024):  # 1MB chunks
                         if chunk:
                             file_.write(chunk)
                             downloaded_bytes += len(chunk)
-                        
-                            # Fortschritt anzeigen
+
+                            # show progress
                             if total_size > 0:
                                 percent = (downloaded_bytes / total_size) * 100
                                 downloaded_gb = downloaded_bytes / (1024**3)
                                 total_gb = total_size / (1024**3)
                                 print(f'\r-> Progress: {percent:.1f}% ({downloaded_gb:.2f} GB / {total_gb:.2f} GB)', end='', flush=True)
-            
+
                 print('\n-> Download completed: {}'.format(file_path))
                 return file_path
-            
+
             except (requests.exceptions.RequestException, urllib3.exceptions.ProtocolError) as e:
                 print(f'\n-> Download interrupted: {e}')
                 print(f'-> Retry {attempt + 1}/{max_retries} in 10 seconds...')
                 time.sleep(10)
 
-                # Aktualisiere downloaded_bytes für Resume
+                # refresh downloaded_bytes for resume
                 if os.path.exists(file_path):
                     downloaded_bytes = os.path.getsize(file_path)
 
