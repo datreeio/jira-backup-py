@@ -84,6 +84,12 @@ UPLOAD_TO_AZURE:
   # AZURE_ACCOUNT_KEY: "your-account-key"
 
 # Custom Filename (optional)
+#  Supports placeholders:
+# - {timestamp} - Current timestamp (DDMMYYYY_HHMM)
+# - {date} - Current date (YYYY-MM-DD)
+# - {time} - Current time (HHMM)
+# - {uuid} - UUID from backup URL
+# - {type} - Backup type (jira/confluence)
 CUSTOM_FILENAME:
   JIRA: "jira.{timestamp}"
   CONFLUENCE: "confluence.{timestamp}"
