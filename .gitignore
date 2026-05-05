@@ -21,6 +21,7 @@ var/
 
 _config.json
 venv/
+.venv/
 .vscode/
 node_modules/
 package-lock.json
@@ -29,3 +30,10 @@ backups/*
 !backups/.gitkeep 
 wizard.pyc
 __pycache__/
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+
+# IDEs
+.idea/
