@@ -1,7 +1,8 @@
-FROM python:3.8
+FROM python:3.14-alpine
 COPY ./ /backup
-RUN chown -R backup:backup /var/backups
+RUN adduser -D backup
+RUN chown -R backup:backup /backup
 WORKDIR /backup
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir ".[all]"
 USER backup
-ENTRYPOINT ["python", "backup.py"]
+ENTRYPOINT ["python", "-m", "jira_backup"]
