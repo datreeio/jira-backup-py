@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=80", "setuptools-scm[toml]>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "jira-backup-py"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Backup Jira and Confluence Cloud data to local storage or cloud object stores."
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "MIT"
@@ -64,3 +64,6 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["jira_backup*"]
+
+[tool.setuptools_scm]
+fallback_version = "v0.0.1-dev"
