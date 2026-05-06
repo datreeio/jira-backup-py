@@ -1,0 +1,51 @@
+name: Build, upload, and publish Python wheels
+
+on:
+  release:
+    types:
+      - created
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  wheel:
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      # See https://docs.pypi.org/trusted-publishers/using-a-publisher/
+      id-token: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine build
+
+      - name: Build wheel
+        run: python -m build
+
+      - name: Upload to the release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.whl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to the public PyPI
+        if: github.event_name == 'release'
+        env:
+          TWINE_USERNAME: ${{ secrets.PUBLIC_PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PUBLIC_PYPI_PASSWORD }}
+        run: twine upload dist/*.whl
