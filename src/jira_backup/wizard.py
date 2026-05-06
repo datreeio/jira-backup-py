@@ -39,7 +39,3 @@ def create_config():
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yaml')
     with open(config_path, 'w+') as config_file:
         yaml.dump(custom_config, config_file, default_flow_style=False)
-
-
-if __name__ == "__main__":
-    create_config()
