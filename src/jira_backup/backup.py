@@ -8,7 +8,6 @@ import boto3
 from boto3.s3.transfer import TransferConfig
 from google.cloud import storage
 from azure.storage.blob import BlobServiceClient
-import wizard
 import platform
 import subprocess
 import sys
@@ -353,7 +352,7 @@ def setup_windows_task(script_path, script_dir, frequency_days, time_hour, time_
         print(f"-> Error setting up scheduled task: {e}")
         return False
 
-if __name__ == '__main__':
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('-C', type=str, dest='config_file', default='', help='path to config file')
     parser.add_argument('-w', action='store_true', dest='wizard', help='activate config wizard')
@@ -367,7 +366,8 @@ if __name__ == '__main__':
     # print('debug command-line: {}'.format(args))
     
     if args.wizard:
-        wizard.create_config()
+        from .wizard import create_config
+        create_config()
     
     if args.schedule:
         try:
@@ -423,3 +423,6 @@ if __name__ == '__main__':
     
     if 'UPLOAD_TO_AZURE' in config and config['UPLOAD_TO_AZURE'].get('AZURE_CONTAINER', '') != '':
         atlass.stream_to_azure(backup_url, file_name)
+
+if __name__ == '__main__':
+    main()

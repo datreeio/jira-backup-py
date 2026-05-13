@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm[toml]>=8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jira-backup-py"
+dynamic = ["version"]
+description = "Backup Jira and Confluence Cloud data to local storage or cloud object stores."
+readme = { file = "README.md", content-type = "text/markdown" }
+license = "MIT"
+license-files = ["LICENSE"]
+authors = []
+requires-python = ">=3.8"
+dependencies = [
+  "PyYAML>=6.0.2,<7",
+  "requests>=2.32.3,<3",
+]
+keywords = ["jira", "confluence", "backup", "atlassian", "s3", "gcs", "azure"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: System Administrators",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: System :: Archiving :: Backup",
+  "Topic :: Utilities",
+]
+
+[project.optional-dependencies]
+s3 = [
+  "boto3>=1.35.26,<2",
+]
+gcp = [
+  "google-cloud-storage>=2.18.0,<3",
+]
+azure = [
+  "azure-storage-blob>=12.22.0,<13",
+]
+all = [
+  "boto3>=1.35.26,<2",
+  "google-cloud-storage>=2.18.0,<3",
+  "azure-storage-blob>=12.22.0,<13",
+]
+
+[project.scripts]
+jira-backup = "jira_backup:main"
+
+[project.urls]
+Homepage = "https://github.com/datreeio/jira-backup-py"
+Repository = "https://github.com/datreeio/jira-backup-py"
+Issues = "https://github.com/datreeio/jira-backup-py/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["jira_backup*"]
+
+[tool.setuptools_scm]
+fallback_version = "v0.0.1-dev"

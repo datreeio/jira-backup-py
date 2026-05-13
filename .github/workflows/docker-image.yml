@@ -1,0 +1,33 @@
+name: Build, upload, and publish Docker images
+
+on:
+  release:
+    types:
+      - created
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  docker:
+    timeout-minutes: 20
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      # See https://docs.pypi.org/trusted-publishers/using-a-publisher/
+      id-token: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build image
+        run: docker build -t jira_backup .
+
+      - name: Test image
+        run: docker run --rm jira_backup --help
+
+      # TODO: Upload Docker image to the release.
+
+      # TODO: Add tags and publish Docker image to the public Docker registry.
