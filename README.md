@@ -1,7 +1,7 @@
 # Jira Backup Python
 
 [![datree-badge](https://s3.amazonaws.com/catalog.static.datree.io/datree-badge-28px.svg)](https://datree.io/?src=badge)
-[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A Python-based backup tool for Atlassian Cloud Jira and Confluence instances with multi-cloud storage support and automated scheduling.
@@ -17,12 +17,20 @@ A Python-based backup tool for Atlassian Cloud Jira and Confluence instances wit
 
 ## 📋 Prerequisites
 
-- Python 3.7 or higher
+- Python 3.8 or higher
 - Atlassian Cloud account (Jira and/or Confluence)
 - API token from [Atlassian](https://id.atlassian.com/manage/api-tokens)
 - (Optional) Cloud storage account: AWS, Google Cloud, or Azure
 
 ## 🛠️ Installation
+
+### From PyPI
+
+```shell
+pip install jira_backup
+```
+
+### From source
 
 1. **Clone the repository**
    ```bash
@@ -41,12 +49,10 @@ A Python-based backup tool for Atlassian Cloud Jira and Confluence instances wit
    pip install -r requirements.txt
    ```
 
-4. **Generate API token**
-   - Go to [Atlassian API Tokens](https://id.atlassian.com/manage/api-tokens) and create a token
-   
-5. **Configure the application**
-   - Create a `config.yaml` file with your settings (see Configuration section below)
-   - Or run the configuration wizard: `python backup.py -w`
+### Post-installation steps
+
+1. Go to [Atlassian API Tokens](https://id.atlassian.com/manage/api-tokens) and create a token.
+2. See the [Configuration](#configuration) section below.
 
 ## ⚙️ Configuration
 
@@ -99,7 +105,7 @@ CUSTOM_FILENAME:
 
 For interactive setup, run:
 ```bash
-python backup.py -w
+python -m jira_backup -w
 ```
 
 This will guide you through setting up basic Jira credentials and S3 configuration.
@@ -110,13 +116,13 @@ This will guide you through setting up basic Jira credentials and S3 configurati
 
 ```bash
 # Backup Jira (default)
-python backup.py -j
+python -m jira_backup -j
 
 # Backup Confluence
-python backup.py -c
+python -m jira_backup -c
 
 # Run configuration wizard
-python backup.py -w
+python -m jira_backup -w
 ```
 
 ### Automated Scheduling
@@ -125,13 +131,13 @@ Set up scheduled backups using system schedulers:
 
 ```bash
 # Setup automated Jira backup every 4 days at 10:00 AM (default)
-python backup.py -s
+python -m jira_backup -s
 
 # Setup automated Confluence backup every 7 days at 2:30 PM  
-python backup.py -s --schedule-days 7 --schedule-time 14:30 --schedule-service confluence
+python -m jira_backup -s --schedule-days 7 --schedule-time 14:30 --schedule-service confluence
 
 # Setup automated Jira backup every 2 days at 6:00 AM
-python backup.py -s --schedule-days 2 --schedule-time 06:00 --schedule-service jira
+python -m jira_backup -s --schedule-days 2 --schedule-time 06:00 --schedule-service jira
 ```
 
 This will create:
