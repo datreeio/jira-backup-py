@@ -1,0 +1,15 @@
+.git
+.github
+backups/
+screenshots/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+config.yaml
+playwright_cookies.json
+*.egg-info/
+dist/
+build/
+.env
