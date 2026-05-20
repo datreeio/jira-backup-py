@@ -34,7 +34,7 @@ pip install jira_backup
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/jira-backup-py.git
+   git clone https://github.com/datreeio/jira-backup-py.git
    cd jira-backup-py
    ```
 
