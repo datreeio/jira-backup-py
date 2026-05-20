@@ -44,9 +44,9 @@ pip install jira_backup
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Install dependencies**
+3. **Install this project with its dependencies**
    ```bash
-   pip install -r requirements.txt
+   pip install .
    ```
 
 ### Post-installation steps
