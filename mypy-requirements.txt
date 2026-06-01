@@ -1,0 +1,6 @@
+mypy==2.1.0
+boto3-stubs==1.*
+types_boto3==1.*
+types_pyyaml==6.*
+types_requests==2.*
+types_setuptools>=80
