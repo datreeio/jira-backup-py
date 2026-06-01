@@ -1,28 +1,23 @@
-import json
-import yaml
-import time
-import os
 import argparse
-import requests
-import boto3
-from boto3.s3.transfer import TransferConfig
-from google.cloud import storage
-from azure.storage.blob import BlobServiceClient
+import json
+import os
 import platform
 import subprocess
 import sys
+import time
+from typing import Dict, Any, Literal
+
+import boto3
+import requests
 import urllib3
+from azure.storage.blob import BlobServiceClient
+from google.cloud import storage  # type: ignore[import-untyped]
 
-
-def read_config(path=""):
-    if path == "":
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
-    with open(path, "r") as config_file:
-        return yaml.full_load(config_file)
+from ._config import read_config, Config
 
 
 class Atlassian:
-    def __init__(self, config):
+    def __init__(self, config: Config) -> None:
         self.config = config
         self.session = requests.Session()
         self.session.auth = (config["USER_EMAIL"], config["API_TOKEN"])
@@ -42,10 +37,10 @@ class Atlassian:
         self.get_last_jira_backup = "https://{}/rest/backup/1/export/lastTaskId".format(
             self.config["HOST_URL"]
         )
-        self.backup_status = {}
+        self.backup_status: Dict[str, Any] = {}
         self.wait = 10
 
-    def generate_filename(self, backup_url, backup_type="jira"):
+    def generate_filename(self, backup_url: str, backup_type: str = "jira") -> str:
         """
         Generate filename based on config or default pattern.
         Supports placeholders:
@@ -79,7 +74,7 @@ class Atlassian:
         else:
             return "{timestamp}_{uuid}.zip".format(timestamp=timestamp, uuid=uuid)
 
-    def create_confluence_backup(self):
+    def create_confluence_backup(self) -> str:
         backup = self.session.post(
             self.start_confluence_backup, data=json.dumps(self.payload)
         )
@@ -107,7 +102,7 @@ class Atlassian:
             url=self.config["HOST_URL"], file_name=self.backup_status["fileName"]
         )
 
-    def create_jira_backup(self):
+    def create_jira_backup(self) -> str:
         backup = self.session.post(
             self.start_jira_backup, data=json.dumps(self.payload)
         )
@@ -147,7 +142,7 @@ class Atlassian:
             result_id=self.backup_status["result"],
         )
 
-    def download_file(self, url, local_filename, max_retries=5):
+    def download_file(self, url: str, local_filename: str, max_retries: int = 5) -> str:
         print("-> Downloading file from URL: {}".format(url))
         file_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "backups", local_filename
@@ -211,7 +206,7 @@ class Atlassian:
 
         raise Exception(f"Download failed after {max_retries} retries")
 
-    def stream_to_s3(self, url, remote_filename):
+    def stream_to_s3(self, url: str, remote_filename: str) -> None:
         print("-> Streaming to S3")
 
         if self.config["UPLOAD_TO_S3"]["AWS_ACCESS_KEY"] == "":
@@ -241,7 +236,7 @@ class Atlassian:
                 ExtraArgs={"ContentType": r.headers["content-type"]},
             )
 
-    def stream_to_gcs(self, url, remote_filename):
+    def stream_to_gcs(self, url: str, remote_filename: str) -> None:
         print("-> Streaming to GCS")
 
         if self.config["UPLOAD_TO_GCP"]["GCP_SERVICE_ACCOUNT_KEY"]:
@@ -269,7 +264,7 @@ class Atlassian:
 
             blob.upload_from_file(r.raw, content_type=blob.content_type)
 
-    def stream_to_azure(self, url, remote_filename):
+    def stream_to_azure(self, url: str, remote_filename: str) -> None:
         print("-> Streaming to Azure Blob Storage")
 
         if self.config["UPLOAD_TO_AZURE"]["AZURE_CONNECTION_STRING"]:
@@ -304,8 +299,11 @@ class Atlassian:
 
 
 def setup_scheduled_task(
-    frequency_days=4, time_hour=10, time_minute=0, service_type="jira"
-):
+    frequency_days: int = 4,
+    time_hour: int = 10,
+    time_minute: int = 0,
+    service_type: Literal["jira", "confluence"] = "jira",
+) -> bool:
     script_path = os.path.abspath(__file__)
     script_dir = os.path.dirname(script_path)
 
@@ -334,8 +332,13 @@ def setup_scheduled_task(
 
 
 def setup_cron_task(
-    script_path, script_dir, frequency_days, time_hour, time_minute, service_type
-):
+    script_path: os.PathLike[str] | str,
+    script_dir: os.PathLike[str] | str,
+    frequency_days: int,
+    time_hour: int,
+    time_minute: int,
+    service_type: Literal["jira", "confluence"],
+) -> bool:
     python_path = sys.executable
     service_flag = "-j" if service_type == "jira" else "-c"
 
@@ -392,8 +395,13 @@ def setup_cron_task(
 
 
 def setup_windows_task(
-    script_path, script_dir, frequency_days, time_hour, time_minute, service_type
-):
+    script_path: os.PathLike[str] | str,
+    script_dir: os.PathLike[str] | str,
+    frequency_days: int,
+    time_hour: int,
+    time_minute: int,
+    service_type: Literal["jira", "confluence"],
+) -> bool:
     python_path = sys.executable
     service_flag = "-j" if service_type == "jira" else "-c"
     task_name = f"jira-backup-py-{service_type}"
@@ -473,7 +481,7 @@ def main() -> None:
     # print('debug command-line: {}'.format(args))
 
     if args.wizard:
-        from .wizard import create_config
+        from ._wizard import create_config
 
         create_config()
 
@@ -526,7 +534,7 @@ def main() -> None:
     file_name = atlass.generate_filename(backup_url, backup_type)
     print("-> Generated filename: {}".format(file_name))
 
-    if config["DOWNLOAD_LOCALLY"] == "true":
+    if config["DOWNLOAD_LOCALLY"]:
         atlass.download_file(backup_url, file_name)
 
     if "UPLOAD_TO_S3" in config and config["UPLOAD_TO_S3"].get("S3_BUCKET", "") != "":

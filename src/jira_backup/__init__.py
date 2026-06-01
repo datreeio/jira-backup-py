@@ -1,5 +1,8 @@
-from .backup import Atlassian
+from ._backup import Atlassian
+from ._config import Config, read_config
 
 __all__ = [
-    Atlassian,
+    "Atlassian",
+    "Config",
+    "read_config",
 ]
