@@ -28,7 +28,7 @@ package-lock.json
 test.py
 backups/*
 !backups/.gitkeep 
-wizard.pyc
+*.pyc
 __pycache__/
 .pytest_cache/
 .mypy_cache/
