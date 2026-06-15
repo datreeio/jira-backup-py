@@ -34,19 +34,13 @@ def import_optional_extra(module_name: str, extra_name: str, purpose: str) -> An
 
 
 def ensure_upload_extras(config: Config) -> None:
-    if "UPLOAD_TO_S3" in config and config["UPLOAD_TO_S3"].get("S3_BUCKET", "") != "":
+    if config.upload_to_s3 and config.upload_to_s3.s3_bucket:
         import_optional_extra("boto3", "s3", "S3 uploads")
 
-    if (
-        "UPLOAD_TO_GCP" in config
-        and config["UPLOAD_TO_GCP"].get("GCS_BUCKET", "") != ""
-    ):
+    if config.upload_to_gcp and config.upload_to_gcp.gcs_bucket:
         import_optional_extra("google.cloud.storage", "gcp", "GCS uploads")
 
-    if (
-        "UPLOAD_TO_AZURE" in config
-        and config["UPLOAD_TO_AZURE"].get("AZURE_CONTAINER", "") != ""
-    ):
+    if config.upload_to_azure and config.upload_to_azure.azure_container:
         import_optional_extra(
             "azure.storage.blob", "azure", "Azure Blob Storage uploads"
         )
@@ -56,22 +50,22 @@ class Atlassian:
     def __init__(self, config: Config) -> None:
         self.config = config
         self.session = requests.Session()
-        self.session.auth = (config["USER_EMAIL"], config["API_TOKEN"])
+        self.session.auth = (config.user_email, config.api_token)
         self.session.headers.update(
             {"Content-Type": "application/json", "Accept": "application/json"}
         )
         self.payload = {
-            "cbAttachments": self.config["INCLUDE_ATTACHMENTS"],
+            "cbAttachments": self.config.include_attachments,
             "exportToCloud": "true",
         }
         self.start_confluence_backup = "https://{}/wiki/rest/obm/1.0/runbackup".format(
-            self.config["HOST_URL"]
+            self.config.host_url
         )
         self.start_jira_backup = "https://{}/rest/backup/1/export/runbackup".format(
-            self.config["HOST_URL"]
+            self.config.host_url
         )
         self.get_last_jira_backup = "https://{}/rest/backup/1/export/lastTaskId".format(
-            self.config["HOST_URL"]
+            self.config.host_url
         )
         self.backup_status: Dict[str, Any] = {}
         self.wait = 10
@@ -89,12 +83,14 @@ class Atlassian:
         uuid = backup_url.split("/")[-1].replace("?fileId=", "")
         timestamp = time.strftime("%d%m%Y_%H%M")
 
-        custom_pattern = self.config.get("CUSTOM_FILENAME", {})
+        custom_pattern = self.config.custom_filename
 
-        if backup_type == "confluence":
-            pattern = custom_pattern.get("CONFLUENCE", "")
+        if custom_pattern is None:
+            pattern = ""
+        elif backup_type == "confluence":
+            pattern = custom_pattern.confluence
         else:
-            pattern = custom_pattern.get("JIRA", "")
+            pattern = custom_pattern.jira
 
         if pattern:
             filename = pattern.format(
@@ -120,7 +116,7 @@ class Atlassian:
 
         print("-> Backup process successfully started")
         confluence_backup_status = "https://{}/wiki/rest/obm/1.0/getprogress".format(
-            self.config["HOST_URL"]
+            self.config.host_url
         )
         time.sleep(self.wait)
         while "fileName" not in self.backup_status.keys():
@@ -135,7 +131,7 @@ class Atlassian:
             )
             time.sleep(self.wait)
         return "https://{url}/wiki/download/{file_name}".format(
-            url=self.config["HOST_URL"], file_name=self.backup_status["fileName"]
+            url=self.config.host_url, file_name=self.backup_status["fileName"]
         )
 
     def create_jira_backup(self) -> str:
@@ -160,7 +156,7 @@ class Atlassian:
             raise Exception(backup, backup.text)
 
         jira_backup_status = "https://{jira_host}/rest/backup/1/export/getProgress?taskId={task_id}".format(
-            jira_host=self.config["HOST_URL"], task_id=task_id
+            jira_host=self.config.host_url, task_id=task_id
         )
         time.sleep(self.wait)
         while "result" not in self.backup_status.keys():
@@ -174,7 +170,7 @@ class Atlassian:
             )
             time.sleep(self.wait)
         return "{prefix}/{result_id}".format(
-            prefix="https://" + self.config["HOST_URL"] + "/plugins/servlet",
+            prefix="https://" + self.config.host_url + "/plugins/servlet",
             result_id=self.backup_status["result"],
         )
 
@@ -245,24 +241,30 @@ class Atlassian:
     def stream_to_s3(self, url: str, remote_filename: str) -> None:
         print("-> Streaming to S3")
         boto3 = import_optional_extra("boto3", "s3", "S3 uploads")
+        upload_config = self.config.upload_to_s3
 
-        if self.config["UPLOAD_TO_S3"]["AWS_ACCESS_KEY"] == "":
+        if upload_config is None:
+            raise ValueError(
+                "S3 upload was requested but upload_to_s3 is not configured"
+            )
+
+        if upload_config.aws_access_key == "":
             s3_client = boto3.client("s3")
         else:
             s3_client = boto3.client(
                 "s3",
-                aws_access_key_id=self.config["UPLOAD_TO_S3"]["AWS_ACCESS_KEY"],
-                aws_secret_access_key=self.config["UPLOAD_TO_S3"]["AWS_SECRET_KEY"],
-                region_name=self.config["UPLOAD_TO_S3"]["AWS_REGION"],
-                endpoint_url=self.config["UPLOAD_TO_S3"]["AWS_ENDPOINT_URL"],
-                use_ssl=self.config["UPLOAD_TO_S3"]["AWS_IS_SECURE"],
+                aws_access_key_id=upload_config.aws_access_key,
+                aws_secret_access_key=upload_config.aws_secret_key,
+                region_name=upload_config.aws_region or None,
+                endpoint_url=upload_config.aws_endpoint_url or None,
+                use_ssl=upload_config.aws_is_secure,
             )
 
-        bucket_name = self.config["UPLOAD_TO_S3"]["S3_BUCKET"]
+        bucket_name = upload_config.s3_bucket
         r = self.session.get(url, stream=True)
         if r.status_code == 200:
             key = "{s3_bucket}{s3_filename}".format(
-                s3_bucket=self.config["UPLOAD_TO_S3"]["S3_DIR"],
+                s3_bucket=upload_config.s3_dir,
                 s3_filename=remote_filename,
             )
 
@@ -276,24 +278,28 @@ class Atlassian:
     def stream_to_gcs(self, url: str, remote_filename: str) -> None:
         print("-> Streaming to GCS")
         storage = import_optional_extra("google.cloud.storage", "gcp", "GCS uploads")
+        upload_config = self.config.upload_to_gcp
 
-        if self.config["UPLOAD_TO_GCP"]["GCP_SERVICE_ACCOUNT_KEY"]:
+        if upload_config is None:
+            raise ValueError(
+                "GCS upload was requested but upload_to_gcp is not configured"
+            )
+
+        if upload_config.gcp_service_account_key:
             client = storage.Client.from_service_account_json(
-                self.config["UPLOAD_TO_GCP"]["GCP_SERVICE_ACCOUNT_KEY"],
-                project=self.config["UPLOAD_TO_GCP"]["GCP_PROJECT_ID"],
+                upload_config.gcp_service_account_key,
+                project=upload_config.gcp_project_id,
             )
         else:
-            client = storage.Client(
-                project=self.config["UPLOAD_TO_GCP"]["GCP_PROJECT_ID"]
-            )
+            client = storage.Client(project=upload_config.gcp_project_id)
 
-        bucket_name = self.config["UPLOAD_TO_GCP"]["GCS_BUCKET"]
+        bucket_name = upload_config.gcs_bucket
         bucket = client.bucket(bucket_name)
 
         r = self.session.get(url, stream=True)
         if r.status_code == 200:
             blob_name = "{gcs_dir}{filename}".format(
-                gcs_dir=self.config["UPLOAD_TO_GCP"]["GCS_DIR"],
+                gcs_dir=upload_config.gcs_dir,
                 filename=remote_filename,
             )
 
@@ -308,24 +314,32 @@ class Atlassian:
             "azure.storage.blob", "azure", "Azure Blob Storage uploads"
         )
         blob_service_client_class = blob_module.BlobServiceClient
+        upload_config = self.config.upload_to_azure
 
-        if self.config["UPLOAD_TO_AZURE"]["AZURE_CONNECTION_STRING"]:
+        if upload_config is None:
+            raise ValueError(
+                "Azure upload was requested but upload_to_azure is not configured"
+            )
+
+        if upload_config.azure_connection_string:
             blob_service_client = blob_service_client_class.from_connection_string(
-                self.config["UPLOAD_TO_AZURE"]["AZURE_CONNECTION_STRING"]
+                upload_config.azure_connection_string
             )
         else:
-            account_url = f"https://{self.config['UPLOAD_TO_AZURE']['AZURE_ACCOUNT_NAME']}.blob.core.windows.net"
+            account_url = (
+                f"https://{upload_config.azure_account_name}.blob.core.windows.net"
+            )
             blob_service_client = blob_service_client_class(
                 account_url=account_url,
-                credential=self.config["UPLOAD_TO_AZURE"]["AZURE_ACCOUNT_KEY"],
+                credential=upload_config.azure_account_key,
             )
 
-        container_name = self.config["UPLOAD_TO_AZURE"]["AZURE_CONTAINER"]
+        container_name = upload_config.azure_container
 
         r = self.session.get(url, stream=True)
         if r.status_code == 200:
             blob_name = "{azure_dir}{filename}".format(
-                azure_dir=self.config["UPLOAD_TO_AZURE"]["AZURE_DIR"],
+                azure_dir=upload_config.azure_dir,
                 filename=remote_filename,
             )
 
@@ -489,6 +503,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-C",
+        "--config",
         type=str,
         dest="config_file",
         default="config.yaml",
@@ -566,9 +581,13 @@ def main() -> None:
             print(f"-> Error setting up scheduled task: {e}")
             exit(1)
 
-    config = read_config(config_path=config_path)
+    try:
+        config = read_config(config_path=config_path)
+    except Exception as e:
+        print(f"-> Error: {e}", file=sys.stderr)
+        exit(1)
 
-    if config["HOST_URL"] == "something.atlassian.net":
+    if config.host_url == "something.atlassian.net":
         raise ValueError(
             'You forgot to edit config.yaml or to run the backup script with "-w" flag'
         )
@@ -580,9 +599,7 @@ def main() -> None:
         exit(1)
 
     print(
-        "-> Starting backup; include attachments: {}".format(
-            config["INCLUDE_ATTACHMENTS"]
-        )
+        "-> Starting backup; include attachments: {}".format(config.include_attachments)
     )
 
     atlass = Atlassian(config)
@@ -597,20 +614,14 @@ def main() -> None:
     file_name = atlass.generate_filename(backup_url, backup_type)
     print("-> Generated filename: {}".format(file_name))
 
-    if config["DOWNLOAD_LOCALLY"]:
+    if config.download_locally:
         atlass.download_file(backup_url, file_name)
 
-    if "UPLOAD_TO_S3" in config and config["UPLOAD_TO_S3"].get("S3_BUCKET", "") != "":
+    if config.upload_to_s3 and config.upload_to_s3.s3_bucket:
         atlass.stream_to_s3(backup_url, file_name)
 
-    if (
-        "UPLOAD_TO_GCP" in config
-        and config["UPLOAD_TO_GCP"].get("GCS_BUCKET", "") != ""
-    ):
+    if config.upload_to_gcp and config.upload_to_gcp.gcs_bucket:
         atlass.stream_to_gcs(backup_url, file_name)
 
-    if (
-        "UPLOAD_TO_AZURE" in config
-        and config["UPLOAD_TO_AZURE"].get("AZURE_CONTAINER", "") != ""
-    ):
+    if config.upload_to_azure and config.upload_to_azure.azure_container:
         atlass.stream_to_azure(backup_url, file_name)

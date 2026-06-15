@@ -1,0 +1,36 @@
+---
+host_url: "something.atlassian.net"
+user_email: "user.name@company.com"
+api_token: "replace-with-atlassian-api-token"
+include_attachments: false
+download_locally: true
+
+# Optional. To skip S3 upload, leave `s3_bucket` empty or remove the `upload_to_s3` section.
+upload_to_s3:
+  aws_endpoint_url: ""
+  aws_region: "us-east-1"
+  s3_bucket: ""
+  s3_dir: "Atlassian/"
+  aws_access_key: ""
+  aws_secret_key: ""
+  aws_is_secure: true
+
+# Optional. To skip GCS upload, leave `gcs_bucket` empty or remove the `upload_to_gcp` section.
+upload_to_gcp:
+  gcp_project_id: ""
+  gcs_bucket: ""
+  gcs_dir: "Atlassian/"
+  gcp_service_account_key: null
+
+# Optional. To skip Azure upload, leave `azure_container` empty or remove the `upload_to_azure` section.
+upload_to_azure:
+  azure_account_name: ""
+  azure_container: ""
+  azure_dir: "Atlassian/"
+  azure_connection_string: ""
+  azure_account_key: ""
+
+# Optional. Remove this section to use the default {timestamp}_{uuid}.zip name.
+custom_filename:
+  jira: "jira.{timestamp}"
+  confluence: "confluence.{timestamp}"

@@ -56,52 +56,70 @@ pip install jira_backup
 
 ## ⚙️ Configuration
 
-### Configuration File Setup
+### Configuration file
 
-Create a `config.yaml` file with your settings:
+- `jira_backup` looks for a `config.yaml` file in the working directory.
+- You can pass a config file explicitly with `-C /path/to/config.yaml` or `--config /path/to/config.yaml`.
+- You can [generate a config file using the wizard](#configuration-wizard).
+- For source checkouts, you can start from the example file: `cp config.example.yaml config.yaml`
+
+#### Configuration validation
+
+- The config file is loaded with `yaml.safe_load` and validated with Pydantic before any backup starts.
+- Keys are case-insensitive.
+- Unknown keys are rejected.
+- Duplicate keys are considered an error.
+- Booleans must be real YAML booleans (`true` or `false`), not quoted strings.
+- `host_url` must be the Atlassian hostname without `https://` or a path.
+
+#### Configuration example
 
 ```yaml
 ---
-HOST_URL: "your-instance.atlassian.net"
-USER_EMAIL: "your.email@company.com"
-API_TOKEN: "your-api-token"
-INCLUDE_ATTACHMENTS: false
-DOWNLOAD_LOCALLY: true
+host_url: "your-instance.atlassian.net"
+user_email: "your.email@company.com"
+api_token: "your-api-token"
+include_attachments: false
+download_locally: true
 
 # AWS S3 Configuration (optional)
-UPLOAD_TO_S3:
-  S3_BUCKET: "my-backup-bucket"
-  AWS_ACCESS_KEY_ID: "your-access-key"
-  AWS_SECRET_ACCESS_KEY: "your-secret-key"
-  AWS_S3_REGION: "us-east-1"
+upload_to_s3:
+  aws_endpoint_url: ""
+  aws_region: "us-east-1"
+  s3_bucket: "my-backup-bucket"
+  s3_dir: "Atlassian/"
+  aws_access_key: "your-access-key"
+  aws_secret_key: "your-secret-key"
+  aws_is_secure: true
 
 # Google Cloud Storage Configuration (optional)
-UPLOAD_TO_GCP:
-  GCP_PROJECT_ID: "my-project-id"
-  GCS_BUCKET: "my-backup-bucket"
-  GCP_SERVICE_ACCOUNT_KEY: "/path/to/service-account-key.json"
+upload_to_gcp:
+  gcp_project_id: "my-project-id"
+  gcs_bucket: "my-backup-bucket"
+  gcs_dir: "Atlassian/"
+  gcp_service_account_key: "/path/to/service-account-key.json"
 
 # Azure Blob Storage Configuration (optional)
-UPLOAD_TO_AZURE:
-  AZURE_ACCOUNT_NAME: "mystorageaccount"
-  AZURE_CONTAINER: "my-backup-container"
-  AZURE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=..."
-  # OR use AZURE_ACCOUNT_KEY instead of connection string
-  # AZURE_ACCOUNT_KEY: "your-account-key"
+upload_to_azure:
+  azure_account_name: "mystorageaccount"
+  azure_container: "my-backup-container"
+  azure_dir: "Atlassian/"
+  azure_connection_string: "DefaultEndpointsProtocol=https;AccountName=..."
+  azure_account_key: ""
 
 # Custom Filename (optional)
-#  Supports placeholders:
+# Supports placeholders:
 # - {timestamp} - Current timestamp (DDMMYYYY_HHMM)
 # - {date} - Current date (YYYY-MM-DD)
 # - {time} - Current time (HHMM)
 # - {uuid} - UUID from backup URL
 # - {type} - Backup type (jira/confluence)
-CUSTOM_FILENAME:
-  JIRA: "jira.{timestamp}"
-  CONFLUENCE: "confluence.{timestamp}"
+custom_filename:
+  jira: "jira.{timestamp}"
+  confluence: "confluence.{timestamp}"
 ```
 
-### Configuration Wizard
+#### Configuration wizard
 
 For interactive setup, run:
 ```bash
@@ -144,50 +162,54 @@ This will create:
 - **Linux/macOS**: A cron job in your crontab
 - **Windows**: A scheduled task in Task Scheduler
 
+Scheduled tasks store an absolute config path.
+If you do not pass `-C` or `--config`,
+the scheduler uses `config.yaml` from the directory where you ran the scheduling command.
+
 ### Command Line Options
 
-| Option | Description |
-|--------|-------------|
-| `-j, --jira` | Backup Jira (default if no service specified) |
-| `-c, --confluence` | Backup Confluence |
-| `-w, --wizard` | Run configuration wizard |
-| `-s, --schedule` | Setup automated scheduled backup |
-| `--schedule-days` | Frequency in days for scheduled backup (default: 4) |
-| `--schedule-time` | Time for scheduled backup in HH:MM format (default: 10:00) |
-| `--schedule-service` | Service for scheduled backup (jira/confluence, default: jira) |
+| Option               | Description                                                               |
+|----------------------|---------------------------------------------------------------------------|
+| `-j, --jira`         | Backup Jira (default if no service specified)                             |
+| `-c, --confluence`   | Backup Confluence                                                         |
+| `-C, --config`       | Path to the config file (default: `config.yaml` in the current directory) |
+| `-w, --wizard`       | Run configuration wizard                                                  |
+| `-s, --schedule`     | Setup automated scheduled backup                                          |
+| `--schedule-days`    | Frequency in days for scheduled backup (default: 4)                       |
+| `--schedule-time`    | Time for scheduled backup in HH:MM format (default: 10:00)                |
+| `--schedule-service` | Service for scheduled backup (jira/confluence, default: jira)             |
 
 ## 🔧 Advanced Configuration
 
 ### Minimal Configuration
 
-If you only want to download backups locally without cloud storage:
+If you only want to download backups locally without cloud storage,
+simply omit the `upload_to_xxx` sections:
 
 ```yaml
 ---
-HOST_URL: "your-instance.atlassian.net"
-USER_EMAIL: "your.email@company.com"
-API_TOKEN: "your-api-token"
-INCLUDE_ATTACHMENTS: false
-DOWNLOAD_LOCALLY: true
+host_url: "your-instance.atlassian.net"
+user_email: "your.email@company.com"
+api_token: "your-api-token"
+include_attachments: false
+download_locally: true
 ```
-
-Simply omit the `UPLOAD_TO_XXX` sections you don't need.
 
 ### Multiple Cloud Providers
 
 You can configure multiple cloud storage providers simultaneously - the script will upload to all configured destinations:
 
 ```yaml
-UPLOAD_TO_S3:
-  S3_BUCKET: "my-s3-bucket"
+upload_to_s3:
+  s3_bucket: "my-s3-bucket"
   # ... S3 config
 
-UPLOAD_TO_GCP:
-  GCS_BUCKET: "my-gcs-bucket"
+upload_to_gcp:
+  gcs_bucket: "my-gcs-bucket"
   # ... GCP config
 
-UPLOAD_TO_AZURE:
-  AZURE_CONTAINER: "my-azure-container"
+upload_to_azure:
+  azure_container: "my-azure-container"
   # ... Azure config
 ```
 
