@@ -2,9 +2,11 @@ import argparse
 import json
 import os
 import platform
+import shlex
 import subprocess
 import sys
 import time
+from pathlib import Path
 from typing import Dict, Any, Literal
 
 import boto3
@@ -299,50 +301,55 @@ class Atlassian:
 
 
 def setup_scheduled_task(
+    *,
     frequency_days: int = 4,
     time_hour: int = 10,
     time_minute: int = 0,
     service_type: Literal["jira", "confluence"] = "jira",
+    config_path: Path,
 ) -> bool:
-    script_path = os.path.abspath(__file__)
-    script_dir = os.path.dirname(script_path)
-
     system = platform.system().lower()
 
     if system in ["linux", "darwin"]:
         return setup_cron_task(
-            script_path,
-            script_dir,
-            frequency_days,
-            time_hour,
-            time_minute,
-            service_type,
+            frequency_days=frequency_days,
+            time_hour=time_hour,
+            time_minute=time_minute,
+            service_type=service_type,
+            config_path=config_path,
         )
     elif system == "windows":
         return setup_windows_task(
-            script_path,
-            script_dir,
-            frequency_days,
-            time_hour,
-            time_minute,
-            service_type,
+            frequency_days=frequency_days,
+            time_hour=time_hour,
+            time_minute=time_minute,
+            service_type=service_type,
+            config_path=config_path,
         )
     else:
         raise Exception(f"Unsupported operating system: {system}")
 
 
 def setup_cron_task(
-    script_path: os.PathLike[str] | str,
-    script_dir: os.PathLike[str] | str,
+    *,
     frequency_days: int,
     time_hour: int,
     time_minute: int,
     service_type: Literal["jira", "confluence"],
+    config_path: Path,
 ) -> bool:
-    python_path = sys.executable
     service_flag = "-j" if service_type == "jira" else "-c"
-
-    cron_command = f"{time_minute} {time_hour} */{frequency_days} * * cd {script_dir} && {python_path} {script_path} {service_flag}"
+    backup_command = shlex.join(
+        [
+            sys.executable,
+            "-m",
+            "jira_backup",
+            service_flag,
+            "-C",
+            config_path.as_posix(),
+        ]
+    )
+    cron_command = f"{time_minute} {time_hour} */{frequency_days} * * {backup_command}"
 
     try:
         result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
@@ -395,17 +402,18 @@ def setup_cron_task(
 
 
 def setup_windows_task(
-    script_path: os.PathLike[str] | str,
-    script_dir: os.PathLike[str] | str,
+    *,
     frequency_days: int,
     time_hour: int,
     time_minute: int,
     service_type: Literal["jira", "confluence"],
+    config_path: Path,
 ) -> bool:
-    python_path = sys.executable
-    service_flag = "-j" if service_type == "jira" else "-c"
     task_name = f"jira-backup-py-{service_type}"
-
+    service_flag = "-j" if service_type == "jira" else "-c"
+    backup_command = subprocess.list2cmdline(
+        [sys.executable, "-m", "jira_backup", service_flag, "-C", config_path]
+    )
     cmd = [
         "schtasks",
         "/create",
@@ -416,7 +424,7 @@ def setup_windows_task(
         "/mo",
         str(frequency_days),
         "/tr",
-        f'"{python_path}" "{script_path}" {service_flag}',
+        backup_command,
         "/st",
         f"{time_hour:02d}:{time_minute:02d}",
         "/f",
@@ -440,7 +448,11 @@ def setup_windows_task(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-C", type=str, dest="config_file", default="", help="path to config file"
+        "-C",
+        type=str,
+        dest="config_file",
+        default="config.json",
+        help="path to config file",
     )
     parser.add_argument(
         "-w", action="store_true", dest="wizard", help="activate config wizard"
@@ -478,12 +490,12 @@ def main() -> None:
         help="service type for scheduled backup (default: jira)",
     )
     args = parser.parse_args()
-    # print('debug command-line: {}'.format(args))
+    config_path = Path(args.config_file)
 
     if args.wizard:
         from ._wizard import create_config
 
-        create_config()
+        create_config(config_path=config_path)
 
     if args.schedule:
         try:
@@ -494,11 +506,16 @@ def main() -> None:
             if not (0 <= hour <= 23) or not (0 <= minute <= 59):
                 raise ValueError("Invalid time format")
 
+            if not config_path.exists():
+                print("-> Error: Can't schedule script without a config file.")
+                exit(1)
+
             setup_scheduled_task(
                 frequency_days=args.schedule_days,
                 time_hour=hour,
                 time_minute=minute,
                 service_type=args.schedule_service,
+                config_path=config_path,
             )
             print("-> Scheduled task setup completed")
             exit(0)
@@ -509,7 +526,7 @@ def main() -> None:
             print(f"-> Error setting up scheduled task: {e}")
             exit(1)
 
-    config = read_config(args.config_file)
+    config = read_config(config_path=config_path)
 
     if config["HOST_URL"] == "something.atlassian.net":
         raise ValueError(
@@ -551,7 +568,3 @@ def main() -> None:
         and config["UPLOAD_TO_AZURE"].get("AZURE_CONTAINER", "") != ""
     ):
         atlass.stream_to_azure(backup_url, file_name)
-
-
-if __name__ == "__main__":
-    main()

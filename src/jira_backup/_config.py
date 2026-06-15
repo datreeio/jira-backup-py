@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from typing import TypedDict, NotRequired
 
 import yaml
@@ -46,9 +46,6 @@ class Config(TypedDict):
     CUSTOM_FILENAME: NotRequired[ConfigCustomFilename]
 
 
-def read_config(path: os.PathLike[str] | str = "") -> Config:
-    if path == "":
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
-    with open(path, "r") as config_file:
-        # TODO: Validate the loaded config before returning.
-        return yaml.full_load(config_file)  # type: ignore[no-any-return]
+def read_config(*, config_path: Path) -> Config:
+    # TODO: Validate the loaded config before returning.
+    return yaml.safe_load(config_path.read_text())  # type: ignore[no-any-return]

@@ -1,11 +1,11 @@
-import os
+from pathlib import Path
 
 import yaml
 
 from ._config import ConfigUploadToS3, Config
 
 
-def create_config() -> None:
+def create_config(*, config_path: Path) -> None:
     custom_config = Config(
         HOST_URL=input("What is your Jira host name? "),
         USER_EMAIL=input("What is your Jira account email address? "),
@@ -27,10 +27,7 @@ def create_config() -> None:
             AWS_IS_SECURE=input_boolean("Do you want to use SSL?"),
         )
 
-    config_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "config.yaml"
-    )
-    with open(config_path, "w+") as config_file:
+    with config_path.open("w+") as config_file:
         yaml.dump(custom_config, config_file, default_flow_style=False)
 
 
