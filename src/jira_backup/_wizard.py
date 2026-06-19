@@ -27,7 +27,8 @@ def create_config(*, config_path: Path) -> None:
             AWS_IS_SECURE=input_boolean("Do you want to use SSL?"),
         )
 
-    with config_path.open("w+") as config_file:
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with config_path.open("w", encoding="utf-8") as config_file:
         yaml.dump(custom_config, config_file, default_flow_style=False)
 
 
