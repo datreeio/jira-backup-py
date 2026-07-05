@@ -6,16 +6,50 @@ import shlex
 import subprocess
 import sys
 import time
+from importlib import import_module
 from pathlib import Path
 from typing import Dict, Any, Literal
 
-import boto3
 import requests
 import urllib3
-from azure.storage.blob import BlobServiceClient
-from google.cloud import storage  # type: ignore[import-untyped]
 
 from ._config import read_config, Config
+
+
+class OptionalExtraMissingError(RuntimeError):
+    pass
+
+
+def import_optional_extra(module_name: str, extra_name: str, purpose: str) -> Any:
+    try:
+        return import_module(module_name)
+    except ModuleNotFoundError as e:
+        missing_root = module_name.split(".")[0]
+        if getattr(e, "name", None) in (missing_root, module_name):
+            raise OptionalExtraMissingError(
+                f"{purpose} requires the optional '{extra_name}' extra. "
+                f"Install it with: pip install \"jira_backup[{extra_name}]\""
+            ) from e
+        raise
+
+
+def ensure_upload_extras(config: Config) -> None:
+    if "UPLOAD_TO_S3" in config and config["UPLOAD_TO_S3"].get("S3_BUCKET", "") != "":
+        import_optional_extra("boto3", "s3", "S3 uploads")
+
+    if (
+        "UPLOAD_TO_GCP" in config
+        and config["UPLOAD_TO_GCP"].get("GCS_BUCKET", "") != ""
+    ):
+        import_optional_extra("google.cloud.storage", "gcp", "GCS uploads")
+
+    if (
+        "UPLOAD_TO_AZURE" in config
+        and config["UPLOAD_TO_AZURE"].get("AZURE_CONTAINER", "") != ""
+    ):
+        import_optional_extra(
+            "azure.storage.blob", "azure", "Azure Blob Storage uploads"
+        )
 
 
 class Atlassian:
@@ -210,6 +244,7 @@ class Atlassian:
 
     def stream_to_s3(self, url: str, remote_filename: str) -> None:
         print("-> Streaming to S3")
+        boto3 = import_optional_extra("boto3", "s3", "S3 uploads")
 
         if self.config["UPLOAD_TO_S3"]["AWS_ACCESS_KEY"] == "":
             s3_client = boto3.client("s3")
@@ -240,6 +275,7 @@ class Atlassian:
 
     def stream_to_gcs(self, url: str, remote_filename: str) -> None:
         print("-> Streaming to GCS")
+        storage = import_optional_extra("google.cloud.storage", "gcp", "GCS uploads")
 
         if self.config["UPLOAD_TO_GCP"]["GCP_SERVICE_ACCOUNT_KEY"]:
             client = storage.Client.from_service_account_json(
@@ -268,14 +304,18 @@ class Atlassian:
 
     def stream_to_azure(self, url: str, remote_filename: str) -> None:
         print("-> Streaming to Azure Blob Storage")
+        blob_module = import_optional_extra(
+            "azure.storage.blob", "azure", "Azure Blob Storage uploads"
+        )
+        blob_service_client_class = blob_module.BlobServiceClient
 
         if self.config["UPLOAD_TO_AZURE"]["AZURE_CONNECTION_STRING"]:
-            blob_service_client = BlobServiceClient.from_connection_string(
+            blob_service_client = blob_service_client_class.from_connection_string(
                 self.config["UPLOAD_TO_AZURE"]["AZURE_CONNECTION_STRING"]
             )
         else:
             account_url = f"https://{self.config['UPLOAD_TO_AZURE']['AZURE_ACCOUNT_NAME']}.blob.core.windows.net"
-            blob_service_client = BlobServiceClient(
+            blob_service_client = blob_service_client_class(
                 account_url=account_url,
                 credential=self.config["UPLOAD_TO_AZURE"]["AZURE_ACCOUNT_KEY"],
             )
@@ -532,6 +572,12 @@ def main() -> None:
         raise ValueError(
             'You forgot to edit config.yaml or to run the backup script with "-w" flag'
         )
+
+    try:
+        ensure_upload_extras(config)
+    except OptionalExtraMissingError as e:
+        print(f"-> Error: {e}", file=sys.stderr)
+        exit(1)
 
     print(
         "-> Starting backup; include attachments: {}".format(
