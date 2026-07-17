@@ -28,7 +28,7 @@ def import_optional_extra(module_name: str, extra_name: str, purpose: str) -> An
         if getattr(e, "name", None) in (missing_root, module_name):
             raise OptionalExtraMissingError(
                 f"{purpose} requires the optional '{extra_name}' extra. "
-                f"Install it with: pip install \"jira_backup[{extra_name}]\""
+                f'Install it with: pip install "jira_backup[{extra_name}]"'
             ) from e
         raise
 
