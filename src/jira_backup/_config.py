@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import yaml
 from pydantic import (
@@ -14,6 +15,44 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+
+
+def _is_valid_hostname(value: str) -> bool:
+    try:
+        parsed = urlsplit(f"//{value}")
+        hostname = parsed.hostname
+        port = parsed.port
+    except ValueError:
+        return False
+
+    if (
+        hostname is None
+        or parsed.netloc != value
+        or parsed.username is not None
+        or parsed.password is not None
+        or port is not None
+        or parsed.path
+        or parsed.query
+        or parsed.fragment
+    ):
+        return False
+
+    try:
+        ascii_hostname = hostname.encode("idna").decode("ascii")
+    except UnicodeError:
+        return False
+
+    if len(ascii_hostname) > 253:
+        return False
+
+    labels = ascii_hostname.split(".")
+    return all(
+        1 <= len(label) <= 63
+        and label[0].isalnum()
+        and label[-1].isalnum()
+        and all(character.isalnum() or character == "-" for character in label)
+        for label in labels
+    )
 
 
 class ConfigModel(BaseModel):
@@ -116,7 +155,7 @@ class Config(ConfigModel):
     upload_to_azure: ConfigUploadToAzure | None = None
     custom_filename: ConfigCustomFilename | None = None
 
-    @field_validator("host_url", "user_email", "api_token")
+    @field_validator("user_email", "api_token")
     @classmethod
     def required_string_must_not_be_blank(cls, value: str) -> str:
         value = value.strip()
@@ -127,9 +166,13 @@ class Config(ConfigModel):
     @field_validator("host_url")
     @classmethod
     def host_url_must_be_hostname(cls, value: str) -> str:
-        if value.startswith(("http://", "https://")) or "/" in value:
+        if not value.strip():
+            raise ValueError("must not be blank")
+
+        if not _is_valid_hostname(value):
             raise ValueError(
-                "must be the Atlassian hostname only, without scheme or path"
+                "must be a valid Atlassian hostname without a scheme or "
+                "other URL components"
             )
         return value
 

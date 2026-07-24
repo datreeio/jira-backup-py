@@ -7,7 +7,60 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from jira_backup._config import read_config
+from jira_backup._config import Config, read_config
+
+
+def make_config(*, host_url: str) -> Config:
+    return Config.model_validate(
+        {
+            "host_url": host_url,
+            "user_email": "backup@example.com",
+            "api_token": "token",
+            "include_attachments": True,
+            "download_locally": True,
+        }
+    )
+
+
+class ConfigTests(unittest.TestCase):
+    def test_host_url_accepts_bare_hostname(self) -> None:
+        for hostname in (
+            "example.atlassian.net",
+            "EXAMPLE.atlassian.net",
+            "jira-backup.internal",
+            "localhost",
+        ):
+            with self.subTest(hostname=hostname):
+                self.assertEqual(make_config(host_url=hostname).host_url, hostname)
+
+    def test_host_url_rejects_url_components_and_whitespace(self) -> None:
+        for value in (
+            "http://example.atlassian.net",
+            "HTTPS://example.atlassian.net",
+            "example.atlassian.net/path",
+            "example.atlassian.net?path=wrong",
+            "example.atlassian.net#fragment",
+            "user@example.atlassian.net",
+            "example.atlassian.net@evil.example",
+            "example.atlassian.net:443",
+            " example.atlassian.net",
+            "example.atlassian.net ",
+            "example .atlassian.net",
+        ):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    make_config(host_url=value)
+
+    def test_host_url_rejects_invalid_hostname_syntax(self) -> None:
+        for value in (
+            "-example.atlassian.net",
+            "example-.atlassian.net",
+            "example..atlassian.net",
+            "example_atlassian.net",
+        ):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    make_config(host_url=value)
 
 
 class ReadConfigTests(unittest.TestCase):

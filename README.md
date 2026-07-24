@@ -70,7 +70,8 @@ pip install jira_backup
 - Unknown keys are rejected.
 - The YAML loader will discard duplicate keys. Only the last occurrence is kept.
 - Booleans must be real YAML booleans (`true` or `false`), not quoted strings.
-- `host_url` must be the Atlassian hostname without `https://` or a path.
+- `host_url` must be a valid Atlassian hostname without a scheme or other URL
+  components.
 
 #### Configuration example
 
