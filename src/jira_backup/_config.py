@@ -134,6 +134,18 @@ class Config(ConfigModel):
         return value
 
 
+def _format_validation_errors(error: ValidationError) -> str:
+    formatted_errors: list[str] = []
+
+    for details in error.errors(include_input=False):
+        location = ".".join(str(part) for part in details["loc"]) or "<root>"
+        formatted_errors.append(
+            f"{location}: {details['msg']} [type={details['type']}]"
+        )
+
+    return "\n".join(formatted_errors)
+
+
 def read_config(*, config_path: Path) -> Config:
     try:
         with config_path.open("r", encoding="utf-8") as config_file:
@@ -155,4 +167,7 @@ def read_config(*, config_path: Path) -> Config:
     try:
         return Config.model_validate(config_data)
     except ValidationError as e:
-        raise ValueError(f"Invalid config file {config_path}:\n{e}") from e
+        validation_errors = _format_validation_errors(e)
+        raise ValueError(
+            f"Invalid config file {config_path}:\n{validation_errors}"
+        ) from e
