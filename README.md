@@ -68,7 +68,7 @@ pip install jira_backup
 - The config file is loaded with `yaml.safe_load` and validated with Pydantic before any backup starts.
 - Keys are case-insensitive.
 - Unknown keys are rejected.
-- Duplicate keys are considered an error.
+- The YAML loader will discard duplicate keys. Only the last occurrence is kept.
 - Booleans must be real YAML booleans (`true` or `false`), not quoted strings.
 - `host_url` must be the Atlassian hostname without `https://` or a path.
 
