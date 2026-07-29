@@ -171,8 +171,7 @@ class Config(ConfigModel):
 
         if not _is_valid_hostname(value):
             raise ValueError(
-                "must be a valid Atlassian hostname without a scheme or "
-                "other URL components"
+                "must be a valid hostname without a scheme or other URL components"
             )
         return value
 

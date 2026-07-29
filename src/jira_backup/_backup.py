@@ -588,9 +588,8 @@ def main() -> None:
         exit(1)
 
     if config.host_url == "something.atlassian.net":
-        raise ValueError(
-            'You forgot to edit config.yaml or to run the backup script with "-w" flag'
-        )
+        print('-> Error: You forgot to edit config.yaml or to run the backup script with "-w" flag', file=sys.stderr)
+        exit(1)
 
     try:
         ensure_upload_extras(config)
