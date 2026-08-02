@@ -37,3 +37,6 @@ coverage.xml
 
 # IDEs
 .idea/
+
+# Files that may contain secrets
+config.yaml
